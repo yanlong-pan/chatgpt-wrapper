@@ -4,23 +4,12 @@ from flask_inputs.validators import JsonSchema
 from flask_login import current_user, login_required, login_user
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler, validation_error_handler
+from chatgpt_wrapper.blueprints.json_schemas import user_registration_schema
 
 users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 
 class RegisterInputs(Inputs):
-    json = [JsonSchema(schema={
-        'type': 'object',
-        'properties': {
-            'username': {'type': 'string'},
-            'email': {'type': 'string', 'format': 'email'},
-            'password': {
-                'type': 'string',
-                'minLength': 8,
-                'pattern': '^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]+$',
-            },
-        },
-        'required': ['username', 'email', 'password']
-    })]
+    json = [JsonSchema(schema=user_registration_schema)]
 
 @users_bp.route('/', methods=['POST'])
 def create_user():
