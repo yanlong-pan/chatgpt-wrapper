@@ -4,12 +4,16 @@ from flask_inputs.validators import JsonSchema
 from flask_login import current_user, login_required, login_user
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler, validation_error_handler
-from chatgpt_wrapper.blueprints.json_schemas import user_registration_schema
+from chatgpt_wrapper.blueprints.json_schemas import user_registration_schema, user_login_schema
 
 users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 
 class RegisterInputs(Inputs):
     json = [JsonSchema(schema=user_registration_schema)]
+    
+class LoginInputs(Inputs):
+    json = [JsonSchema(schema=user_login_schema)]
+
 
 @users_bp.route('/', methods=['POST'])
 def create_user():
@@ -35,7 +39,6 @@ def create_user():
 def get_user(user_id):
     # Check if the requested user ID matches the authenticated user's ID
     if user_id != current_user.id:
-        # If the user IDs do not match, return a 403 Forbidden response
         return jsonify({'error': 'Forbidden', 'current_user_id': current_user.id}), 403
     _, user, _ = current_app.gpt.user_manager.get_by_user_id(user_id)
     if user:
@@ -46,22 +49,19 @@ def get_user(user_id):
 # Define API endpoints for user authentication
 @users_bp.route('login', methods=['POST'])
 def login():
-    # Extract the user data from the request body
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    inputs = LoginInputs(request)
+    if inputs.validate():
+        data = request.get_json()
+        identifier = data.get('email') or data.get('username')
+        password = data.get('password')
 
-    # Find the user with the given email address
-    _, user, msg = current_app.gpt.user_manager.login(email, password)
+        success, user, msg = current_app.gpt.user_manager.login(identifier, password)
 
-    # Verify the user's password
-    if user:
-        # Login the user and create a session
-        login_user(user, force=True)
-
-        # Return a JSON response indicating success
-        return jsonify({'success': True, 'current_user_id': current_user.id})
+        if success:
+            # Login the user and create a session
+            login_user(user, force=True)
+            return jsonify({'success': True, 'current_user_id': current_user.id})
+        else:
+            return jsonify({'success': False, 'reason': msg}), 401
     else:
-        # Return a JSON response indicating failure
-        return jsonify({'success': False, 'reason': msg}), 401
-    
+        return validation_error_handler(inputs)
