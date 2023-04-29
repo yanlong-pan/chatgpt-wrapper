@@ -1,18 +1,45 @@
 from flask import Blueprint, current_app, jsonify, request
-# from flask_inputs import Inputs
-# from flask_inputs.validators import JsonSchema
+from flask_inputs import Inputs
+from flask_inputs.validators import JsonSchema
 from flask_login import current_user, login_required, login_user
+
+from chatgpt_wrapper.blueprints.error_handlers import default_error_handler, validation_error_handler
 
 users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 
+class RegisterInputs(Inputs):
+    json = [JsonSchema(schema={
+        'type': 'object',
+        'properties': {
+            'username': {'type': 'string'},
+            'email': {'type': 'string', 'format': 'email'},
+            'password': {
+                'type': 'string',
+                'minLength': 8,
+                'pattern': '^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]+$',
+            },
+        },
+        'required': ['username', 'email', 'password']
+    })]
+
 @users_bp.route('/', methods=['POST'])
 def create_user():
-    data = request.get_json()
-    _, user, _ = current_app.gpt.user_manager.register(email=data['email'],
-                username=data['username'],
-                password=data['password'])
-    
-    return jsonify(current_app.gpt.user_manager.orm.object_as_dict(user)), 201
+    inputs = RegisterInputs(request)
+    if inputs.validate():
+        try:
+            data = request.get_json()
+            success, user, msg = current_app.gpt.user_manager.register(email=data['email'],
+                        username=data['username'],
+                        password=data['password'])
+        except Exception:
+            return default_error_handler('Fail to register') # Not expose the fact that the email is already in use
+        else:
+            if success:
+                return jsonify(current_app.gpt.user_manager.orm.object_as_dict(user)), 201
+            else:
+                return default_error_handler(msg)
+    else:
+        return validation_error_handler(inputs)
 
 @users_bp.route('<int:user_id>', methods=["GET"])
 @login_required
