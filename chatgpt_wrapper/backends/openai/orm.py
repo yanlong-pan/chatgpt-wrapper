@@ -1,4 +1,5 @@
 import datetime
+from flask_login import UserMixin
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -23,7 +24,7 @@ def _set_sqlite_pragma(conn, _record):
         cursor.close()
 event.listen(Engine, "connect", _set_sqlite_pragma)
 
-class User(Base):
+class User(Base, UserMixin):
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
