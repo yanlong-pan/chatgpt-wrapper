@@ -3,8 +3,9 @@ from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
 from flask_login import current_user, login_required, login_user
 
-from chatgpt_wrapper.blueprints.error_handlers import default_error_handler, validation_error_handler
+from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
 from chatgpt_wrapper.blueprints.json_schemas import user_registration_schema, user_login_schema
+from chatgpt_wrapper.decorators.validation import input_validator
 
 users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 
@@ -14,25 +15,18 @@ class RegisterInputs(Inputs):
 class LoginInputs(Inputs):
     json = [JsonSchema(schema=user_login_schema)]
 
-
 @users_bp.route('/', methods=['POST'])
+@input_validator(RegisterInputs)
 def create_user():
-    inputs = RegisterInputs(request)
-    if inputs.validate():
-        try:
-            data = request.get_json()
-            success, user, msg = current_app.gpt.user_manager.register(email=data['email'],
-                        username=data['username'],
-                        password=data['password'])
-        except Exception:
-            return default_error_handler('Fail to register') # Not expose the fact that the email is already in use
-        else:
-            if success:
-                return jsonify(current_app.gpt.user_manager.orm.object_as_dict(user)), 201
-            else:
-                return default_error_handler(msg)
+    data = request.get_json()
+    success, user, msg = current_app.gpt.user_manager.register(email=data['email'],
+                username=data['username'],
+                password=data['password'])
+
+    if success:
+        return jsonify(current_app.gpt.user_manager.orm.object_as_dict(user)), 201
     else:
-        return validation_error_handler(inputs)
+        return default_error_handler(msg)
 
 @users_bp.route('<int:user_id>', methods=["GET"])
 @login_required
@@ -40,28 +34,25 @@ def get_user(user_id):
     # Check if the requested user ID matches the authenticated user's ID
     if user_id != current_user.id:
         return jsonify({'error': 'Forbidden', 'current_user_id': current_user.id}), 403
-    _, user, _ = current_app.gpt.user_manager.get_by_user_id(user_id)
-    if user:
+    success, user, msg = current_app.gpt.user_manager.get_by_user_id(user_id)
+    if success:
         return jsonify(current_app.gpt.user_manager.orm.object_as_dict(user))
     else:
-        return jsonify({'message': 'User not found'}), 404
+        return default_error_handler(msg, status_code=404)
 
 # Define API endpoints for user authentication
 @users_bp.route('login', methods=['POST'])
+@input_validator(LoginInputs)
 def login():
-    inputs = LoginInputs(request)
-    if inputs.validate():
-        data = request.get_json()
-        identifier = data.get('email') or data.get('username')
-        password = data.get('password')
+    data = request.get_json()
+    identifier = data.get('email') or data.get('username')
+    password = data.get('password')
 
-        success, user, msg = current_app.gpt.user_manager.login(identifier, password)
-
-        if success:
-            # Login the user and create a session
-            login_user(user, force=True)
-            return jsonify({'success': True, 'current_user_id': current_user.id})
-        else:
-            return jsonify({'success': False, 'reason': msg}), 401
+    success, user, msg = current_app.gpt.user_manager.login(identifier, password)
+    if success:
+        # Login the user and create a session
+        login_user(user, force=True)
+        return jsonify({'success': True, 'current_user_id': current_user.id})
     else:
-        return validation_error_handler(inputs)
+        return jsonify({'success': False, 'reason': msg}), 401
+    
