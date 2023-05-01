@@ -54,15 +54,14 @@ class Config:
             os.makedirs(profile_dir)
         return profile_dir
 
-    def load_from_file(self, profile=None):
-        profile = profile or self.profile
-        self.config_file = os.path.join(self.config_profile_dir, "config.yaml")
+    def load_from_file(self, filename = "config.yaml"):
+        self.config_file = os.path.join(self.config_profile_dir, filename)
         try:
             with open(self.config_file, "r") as f:
                 config = yaml.safe_load(f) or {}
-            self.config = self._merge_configs(constants.DEFAULT_CONFIG, config)
+            self.config = self._merge_configs(self.config, config)
         except FileNotFoundError:
-            self.config = constants.DEFAULT_CONFIG
+            self.config = self.config
         self._transform_config()
 
     def _transform_config(self):
