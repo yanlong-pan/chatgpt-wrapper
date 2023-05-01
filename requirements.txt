@@ -14,3 +14,10 @@ PyYAML
 rich
 sqlalchemy
 tiktoken
+gevent
+gunicorn
+flask_login
+jsonschema
+flask_inputs
+deepmerge
+alembic
