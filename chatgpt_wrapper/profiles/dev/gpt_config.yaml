@@ -13,7 +13,7 @@
 backend: chatgpt-api
 # The database connection string, in a format SQLAlchemy understands.
 # DO NOT USE THE LINE AS IT IS WRITTEN BELOW, IT ONLY ILLUSTRATES THE DEFAULT LOCATION.
-# database: sqlite:////home/[username]/.local/share/chatgpt-wrapper/profiles/default/storage.db
+database: sqlite:////Users/panyanlong/workspace/chatgpt-wrapper-fork/chatgpt_wrapper/profiles/dev/storage.db
 
 
 ##########################################################
