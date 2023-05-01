@@ -57,7 +57,7 @@ DEFAULT_CONFIG = {
         'prompt_prefix': '($TEMPERATURE/$TOP_P/$PRESENCE_PENALTY/$FREQUENCY_PENALTY/$MAX_SUBMISSION_TOKENS/$CURRENT_CONVERSATION_TOKENS)$NEWLINE$USER@$MODEL',
         'history_file': '%s%srepl_history.log' % (tempfile.gettempdir(), os.path.sep),
     },
-    'database': None,
+    'database': os.environ.get('DATABASE_URL', None),
     'browser': {
         'provider': 'firefox',
         'debug': False,

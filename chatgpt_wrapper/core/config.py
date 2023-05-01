@@ -1,8 +1,27 @@
 import os
+import re
 import yaml
 import platform
 
 import chatgpt_wrapper.core.constants as constants
+
+ENV_VAR_REGEX = re.compile(r'\$\{(.+?)\}')
+
+def env_var_constructor(loader, node):
+    # 获取YAML中的值
+    value = loader.construct_scalar(node)
+    # 使用正则表达式匹配环境变量
+    matches = ENV_VAR_REGEX.findall(value)
+    if matches:
+        # 遍历所有匹配的环境变量，并从环境变量中获取相应的值替换
+        for match in matches:
+            value = value.replace(f'${{{match}}}', os.getenv(match, f'${{{match}}}'))
+    return value
+
+# 配置自定义构造器
+yaml.SafeLoader.add_constructor('!env', env_var_constructor)
+# 注册隐式解析器
+yaml.SafeLoader.add_implicit_resolver('!env', ENV_VAR_REGEX, None)
 
 class Config:
     def __init__(self, config_dir=None, data_dir=None, profile=constants.DEFAULT_PROFILE, config={}):
