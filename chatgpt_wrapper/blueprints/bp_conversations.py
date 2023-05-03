@@ -1,17 +1,26 @@
 
 import time
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from flask_login import current_user
+from flask_inputs import Inputs
+from flask_inputs.validators import JsonSchema
+from chatgpt_wrapper.blueprints.json_schemas import chat_schema
+
+
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
+from chatgpt_wrapper.decorators.validation import input_validator
 
+class ChatInputs(Inputs):
+    json = [JsonSchema(schema=chat_schema)]
 
 conversations_bp = Blueprint('conversations', __name__, url_prefix='/api/v1/conversations')
 
 @conversations_bp.route("/", methods=["POST"])
+@input_validator(ChatInputs)
 def ask():
     """
-    Ask a question.
+    Have a chat.
 
     Path:
         POST /conversations
@@ -19,7 +28,7 @@ def ask():
     Request Body:
         JSON:
             {
-                "question": String,
+                "user_input": String,
                 "system_message": String
             }
 
@@ -30,39 +39,19 @@ def ask():
     
     start_time = time.time()
     data = request.get_json()
-    # prompt = request.get_data().decode("utf-8")
-    success, result, user_message = current_user.gpt.ask(
-        prompt=data['question'],
-        model_customizations={
+    if data.get('system_message'):
+        model_customizations = {
             "system_message": data["system_message"]
         }
+    else:
+        model_customizations = {}
+    success, result, user_message = current_user.gpt.ask(
+        prompt=data['user_input'],
+        model_customizations=model_customizations
     )
     end_time = time.time()
     execution_time = end_time - start_time
     return jsonify({"execution_time": execution_time, "result": result})
-
-@conversations_bp.route("/new", methods=["POST"])
-def new_conversation():
-    """
-    Start a new conversation.
-
-    Path:
-        POST /conversations/new
-
-    Returns:
-        JSON:
-            {
-                "success": true,
-            }
-
-        JSON:
-            {
-                "success": false,
-                "error": "Failed to start new conversation"
-            }
-    """
-    current_user.gpt.new_conversation()
-    return jsonify({"success": True, "parent_message_id": current_user.gpt.parent_message_id})
 
 @conversations_bp.route("/<string:conversation_id>", methods=["DELETE"])
 def delete_conversation(conversation_id):
