@@ -1,6 +1,7 @@
 
 import time
 from flask import Blueprint, current_app, jsonify, request
+from flask_login import current_user
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
 
@@ -30,7 +31,7 @@ def ask():
     start_time = time.time()
     data = request.get_json()
     # prompt = request.get_data().decode("utf-8")
-    success, result, user_message = current_app.gpt.ask(
+    success, result, user_message = current_user.gpt.ask(
         prompt=data['question'],
         model_customizations={
             "system_message": data["system_message"]
@@ -60,8 +61,8 @@ def new_conversation():
                 "error": "Failed to start new conversation"
             }
     """
-    current_app.gpt.new_conversation()
-    return jsonify({"success": True, "parent_message_id": current_app.gpt.parent_message_id})
+    current_user.gpt.new_conversation()
+    return jsonify({"success": True, "parent_message_id": current_user.gpt.parent_message_id})
 
 @conversations_bp.route("/<string:conversation_id>", methods=["DELETE"])
 def delete_conversation(conversation_id):
@@ -86,7 +87,7 @@ def delete_conversation(conversation_id):
                 "error": "Failed to delete conversation"
             }
     """
-    success, result, user_message = current_app.gpt.delete_conversation(conversation_id)
+    success, result, user_message = current_user.gpt.delete_conversation(conversation_id)
     if success:
         return user_message
     else:
@@ -123,9 +124,9 @@ def set_title(conversation_id):
     """
     json = request.get_json()
     title = json["title"]
-    success, conversation, user_message = current_app.gpt.set_title(title, conversation_id)
+    success, conversation, user_message = current_user.gpt.set_title(title, conversation_id)
     if success:
-        return jsonify(current_app.gpt.conversation.orm.object_as_dict(conversation))
+        return jsonify(current_user.gpt.conversation.orm.object_as_dict(conversation))
     else:
         return default_error_handler("Failed to set title")
 
@@ -159,7 +160,7 @@ def get_history(user_id):
     """
     limit = request.args.get("limit", 20)
     offset = request.args.get("offset", 0)
-    success, result, user_message = current_app.gpt.get_history(limit=limit, offset=offset, user_id=user_id)
+    success, result, user_message = current_user.gpt.get_history(limit=limit, offset=offset, user_id=user_id)
     if result:
         return jsonify(result)
     else:
