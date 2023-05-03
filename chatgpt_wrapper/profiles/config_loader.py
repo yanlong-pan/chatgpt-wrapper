@@ -5,10 +5,10 @@ from chatgpt_wrapper.core.config import Config
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-def load_flask_config(app: Flask, environment: str):
+def load_flask_config(app: Flask):
     for env in ['test', 'dev', 'prod']:
         file_path = f'{dir_path}/{env}/flask_config.py'
-        if env in environment.lower() and os.path.exists(file_path):
+        if env in app.config['ENV'].lower() and os.path.exists(file_path):
             app.config.from_pyfile(file_path)
             break
     else:
