@@ -38,6 +38,14 @@ class User(Base, UserMixin):
 
     conversations = relationship('Conversation', back_populates='user', passive_deletes=True)
 
+    @property
+    def gpt(self):
+        return getattr(self, '_gpt', None)
+
+    @gpt.setter
+    def gpt(self, value):
+        self._gpt = value
+    
 Index('user_username_idx', User.username)
 Index('user_email_idx', User.email)
 Index('user_created_time_idx', User.created_time)
