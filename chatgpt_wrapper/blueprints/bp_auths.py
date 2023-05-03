@@ -40,7 +40,7 @@ def login():
         # Login the user and create a session
         login_user(user, force=True)
         # bind a gpt instance to the user
-        user.gpt = OpenAIAPI(load_gpt_config(current_app.config['ENV']))
+        user.gpt = OpenAIAPI(load_gpt_config(current_app.config['ENV']), default_user_id=user.id)
         return jsonify({'success': True, 'current_user_id': current_user.id})
     else:
         return jsonify({'success': False, 'reason': msg}), 401
