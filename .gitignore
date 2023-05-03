@@ -30,7 +30,7 @@ MANIFEST
 __pypackages__/
 
 # Environments
-.env
+*.env
 .venv
 env/
 venv/
@@ -44,3 +44,9 @@ venv.bak/
 
 # Cython debug symbols
 cython_debug/
+
+
+# mounted directorys
+storage
+
+**/*.db

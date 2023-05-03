@@ -4,15 +4,17 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    container_name: chatgpt-wrapper-container
+    container_name: chatgpt-flask
     restart: always
     volumes:
       - ./:/src
       - ./tmp:/tmp
+      - ./storage:/app
     environment:
       - VNC_RESOLUTION=1600x900
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
     ports:
       - 6901:6901 # Just for logging in with noVNC
-      - 5000:5000 # Flask port
+      - 8888:8888 # Flask port
     command: "bash /src/docker-entrypoint.sh" # Run the entrypoint script

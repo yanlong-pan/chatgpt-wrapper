@@ -1,0 +1,19 @@
+# virtual environment
+.venv/
+
+.git/
+.gitignore
+
+*.env
+**/__pycache__/*
+**/*.pyc
+
+**/*.db
+
+build/
+dist/
+*.egg-info/
+
+*.bak
+*.tmp
+node_modules/

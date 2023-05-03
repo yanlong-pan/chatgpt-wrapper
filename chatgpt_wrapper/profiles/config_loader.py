@@ -3,18 +3,20 @@ from flask import Flask
 
 from chatgpt_wrapper.core.config import Config
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 def load_flask_config(app: Flask, environment: str):
     for env in ['test', 'dev', 'prod']:
-        file_path = f'{app.root_path}/chatgpt_wrapper/profiles/{env}/flask_config.py'
+        file_path = f'{dir_path}/{env}/flask_config.py'
         if env in environment.lower() and os.path.exists(file_path):
             app.config.from_pyfile(file_path)
             break
     else:
         raise ValueError('Invalid config name')
     
-def load_gpt_config(app: Flask, environment: str):
+def load_gpt_config(environment: str):
     for env in ['test', 'dev', 'prod']:
-        config_dir = f'{app.root_path}/chatgpt_wrapper'
+        config_dir = dir_path.rstrip("profiles")
         filename = 'gpt_config.yaml'
         if env in environment.lower():
             config = Config(config_dir=config_dir, profile=env)
