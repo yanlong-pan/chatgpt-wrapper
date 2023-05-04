@@ -1,16 +1,11 @@
 import datetime
 from flask_login import UserMixin
 
-from sqlalchemy import Text, event
 from sqlalchemy.engine import Engine
 from sqlite3 import Connection as SQLite3Connection
-from sqlalchemy import MetaData, ForeignKey, Index, Column, Integer, String, DateTime, JSON, Boolean
-from sqlalchemy import desc
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import inspect
+from sqlalchemy import Text, event, MetaData, ForeignKey, Index, Column, Integer, String, DateTime, JSON, Boolean
+from sqlalchemy.orm import relationship, declarative_base, scoped_session, sessionmaker
+from sqlalchemy import desc, create_engine, inspect
 
 from chatgpt_wrapper.core.config import Config
 from chatgpt_wrapper.core.logger import Logger
@@ -115,7 +110,7 @@ class Orm:
         self.log = Logger(self.__class__.__name__, self.config)
         self.database = self.config.get('database')
         self.engine, self.metadata = self.create_engine_and_metadata()
-        session = sessionmaker(bind=self.engine)
+        session = scoped_session(sessionmaker(bind=self.engine))
         self.session = session()
 
     def _apply_limit_offset(self, query, limit, offset):
