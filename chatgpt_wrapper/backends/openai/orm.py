@@ -1,7 +1,7 @@
 import datetime
 from flask_login import UserMixin
 
-from sqlalchemy import event
+from sqlalchemy import Text, event
 from sqlalchemy.engine import Engine
 from sqlite3 import Connection as SQLite3Connection
 from sqlalchemy import MetaData, ForeignKey, Index, Column, Integer, String, DateTime, JSON, Boolean
@@ -51,11 +51,21 @@ Index('user_email_idx', User.email)
 Index('user_created_time_idx', User.created_time)
 Index('user_last_login_time', User.last_login_time)
 
+class Character(Base):
+    __tablename__ = 'character'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    profile = Column(Text, nullable=False)
+
+Index('character_name_idx', Character.name)
+
 class Conversation(Base):
     __tablename__ = 'conversation'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    character_id = Column(Integer, ForeignKey('character.id', ondelete='CASCADE'), nullable=False)
     title = Column(String, nullable=True)
     model = Column(String, nullable=False)
     created_time = Column(DateTime, nullable=False)
@@ -66,6 +76,7 @@ class Conversation(Base):
     messages = relationship('Message', back_populates='conversation', passive_deletes=True)
 
 Index('conversation_user_id_idx', Conversation.user_id)
+Index('conversation_character_id_idx', Conversation.character_id)
 Index('conversation_created_time_idx', Conversation.created_time)
 Index('conversation_updated_time_idx', Conversation.updated_time)
 Index('conversation_hidden_idx', Conversation.hidden)
