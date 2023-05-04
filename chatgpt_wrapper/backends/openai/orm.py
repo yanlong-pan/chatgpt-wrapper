@@ -63,7 +63,9 @@ class Character(Base):
     __table_args__ = (
         Index('character_name_idx', name, unique=True),
     )
-# Index('character_name_idx', Character.name)
+    
+    conversations = relationship('Conversation', back_populates='character', passive_deletes=True)
+    
 
 class Conversation(Base):
     __tablename__ = 'conversation'
@@ -78,6 +80,7 @@ class Conversation(Base):
     hidden = Column(Boolean, nullable=False)
 
     user = relationship('User', back_populates='conversations')
+    character = relationship('Character', back_populates='conversations')
     messages = relationship('Message', back_populates='conversation', passive_deletes=True)
     
     __table_args__ = (
