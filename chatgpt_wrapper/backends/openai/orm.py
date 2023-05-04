@@ -46,19 +46,24 @@ class User(Base, UserMixin):
     def gpt(self, value):
         self._gpt = value
     
-Index('user_username_idx', User.username)
-Index('user_email_idx', User.email)
-Index('user_created_time_idx', User.created_time)
-Index('user_last_login_time', User.last_login_time)
+    __table_args__ = (
+        Index('user_username_idx', username, unique=True),
+        Index('user_email_idx', email, unique=True),
+        Index('user_created_time_idx', created_time),
+        Index('user_last_login_time', last_login_time),
+    )
 
 class Character(Base):
     __tablename__ = 'character'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
+    name = Column(String, unique=True, nullable=False)
     profile = Column(Text, nullable=False)
 
-Index('character_name_idx', Character.name)
+    __table_args__ = (
+        Index('character_name_idx', name, unique=True),
+    )
+# Index('character_name_idx', Character.name)
 
 class Conversation(Base):
     __tablename__ = 'conversation'
@@ -74,12 +79,14 @@ class Conversation(Base):
 
     user = relationship('User', back_populates='conversations')
     messages = relationship('Message', back_populates='conversation', passive_deletes=True)
-
-Index('conversation_user_id_idx', Conversation.user_id)
-Index('conversation_character_id_idx', Conversation.character_id)
-Index('conversation_created_time_idx', Conversation.created_time)
-Index('conversation_updated_time_idx', Conversation.updated_time)
-Index('conversation_hidden_idx', Conversation.hidden)
+    
+    __table_args__ = (
+        Index('conversation_user_id_idx', user_id),
+        Index('conversation_character_id_idx', character_id),
+        Index('conversation_created_time_idx', created_time),
+        Index('conversation_updated_time_idx', updated_time),
+        Index('conversation_hidden_idx', hidden),
+    )
 
 class Message(Base):
     __tablename__ = 'message'
@@ -94,8 +101,10 @@ class Message(Base):
 
     conversation = relationship('Conversation', back_populates='messages')
 
-Index('message_conversation_id_idx', Message.conversation_id)
-Index('message_created_time_idx', Message.created_time)
+    __table_args__ = (
+        Index('message_conversation_id_idx', conversation_id),
+        Index('message_created_time_idx', created_time),
+    )
 
 class Orm:
     def __init__(self, config=None):
@@ -136,6 +145,13 @@ class Orm:
         query = self._apply_limit_offset(query, limit, offset)
         users = query.all()
         return users
+    
+    def get_characters(self, limit=None, offset=None):
+        self.log.debug('Retrieving all Characters')
+        query = self.session.query(Character).order_by(Character.name)
+        query = self._apply_limit_offset(query, limit, offset)
+        characters = query.all()
+        return characters
 
     def get_conversations(self, user, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True):
         self.log.debug(f'Retrieving Conversations for User with id {user.id}')
