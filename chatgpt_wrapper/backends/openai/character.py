@@ -1,5 +1,6 @@
 import hashlib
 import datetime
+from sqlalchemy import func
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -13,10 +14,9 @@ class CharacterManager(Manager):
 
     def get_by_name(self, character_name):
         try:
-            character_name = character_name.lower()
             character = self.orm.session.query(Character).filter(
-                (Character.name == character_name)
-            ).first()
+                func.lower(Character.name) == character_name.lower()
+            ).one()
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to get character: {str(e)}")
         return True, character, self.character_found_message(character)

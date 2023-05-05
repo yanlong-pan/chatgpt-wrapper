@@ -200,21 +200,11 @@ class OpenAIAPI(Backend):
         messages.extend(new_messages)
         return messages
 
-    def create_new_conversation_if_needed(self, conversation_id=None, title=None):
-        conversation_id = conversation_id or self.conversation_id
-        if conversation_id:
-            success, conversation, message = self.conversation.get_conversation(conversation_id)
-            if not success:
-                raise Exception(message)
-        else:
-            success, conversation, message = self.conversation.add_conversation(self.current_user.id, title=title, model=self.model)
-            if not success:
-                raise Exception(message)
-        self.conversation_id = conversation.id
-        return conversation
-
     def add_new_messages_to_conversation(self, conversation_id, new_messages, response_message, title=None):
-        conversation = self.create_new_conversation_if_needed(conversation_id, title)
+        conversation_id = conversation_id or self.conversation_id
+        success, conversation, message = self.conversation.get_conversation(conversation_id)
+        if not success:
+            raise Exception(message)
         for m in new_messages:
             success, message, user_message = self.message.add_message(conversation.id, m['role'], m['content'])
             if not success:
@@ -311,10 +301,16 @@ class OpenAIAPI(Backend):
                 return success, conversation_data, message
         return self._handle_response(success, conversation, message)
 
-    def new_conversation(self):
+    def new_conversation(self, character_id):
         super().new_conversation()
         self.conversation_tokens = 0
-
+        success, conversation, message = self.conversation.add_conversation(self.current_user.id, character_id, model=self.model)
+        if success:    
+            self.conversation_id = conversation.id
+            return conversation
+        else:
+            raise Exception(message)
+        
     def _strip_out_messages_over_max_tokens(self, messages, token_count, max_tokens):
         stripped_messages_count = 0
         while token_count > max_tokens and len(messages) > 1:

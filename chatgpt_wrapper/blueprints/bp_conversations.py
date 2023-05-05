@@ -29,7 +29,8 @@ def ask():
         JSON:
             {
                 "user_input": String,
-                "system_message": String
+                "character": String,
+                "refresh": Boolean,
             }
 
     Returns:
@@ -39,12 +40,24 @@ def ask():
     
     start_time = time.time()
     data = request.get_json()
-    if data.get('system_message'):
+    
+    _, character, msg = current_user.gpt.character_manager.get_by_name(data["character"])
+    print(msg)
+    print(character)
+    
+    success, conversation, user_message = current_user.gpt.conversation.get_conversation_by_user_and_character(current_user.id, character.id)
+    if success:
+        current_user.gpt.conversation_id = conversation.id
+    else:
+        current_user.gpt.new_conversation(character.id)
+    
+    if data.get('refresh', False): # refresh not yet implemented in OpenAIAPI
         model_customizations = {
-            "system_message": data["system_message"]
+            "system_message": character.profile,
         }
     else:
         model_customizations = {}
+
     success, result, user_message = current_user.gpt.ask(
         prompt=data['user_input'],
         model_customizations=model_customizations

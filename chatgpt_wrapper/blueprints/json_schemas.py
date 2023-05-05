@@ -18,7 +18,9 @@ password_schema = build_single_property_schema(property='password', minLength=8,
 
 user_input_schema = build_single_property_schema(property='user_input')
 
-system_message_schema = build_single_property_schema(property='system_message')
+character_schema = build_single_property_schema(property='character')
+
+refresh_schema = build_single_property_schema(property='refresh', type='boolean')
 
 user_registration_schema = reduce(always_merger.merge, [
     deepcopy(username_schema),
@@ -43,6 +45,7 @@ user_login_schema = reduce(always_merger.merge, [
 
 chat_schema = reduce(always_merger.merge, [
     user_input_schema,
-    system_message_schema,
-    {'required': ['user_input']}
+    character_schema,
+    refresh_schema,
+    {'required': ['user_input', 'character']}
 ])

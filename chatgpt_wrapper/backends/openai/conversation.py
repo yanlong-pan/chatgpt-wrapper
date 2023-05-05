@@ -1,6 +1,6 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from chatgpt_wrapper.backends.openai.orm import Manager
+from chatgpt_wrapper.backends.openai.orm import Conversation, Manager
 
 class ConversationManager(Manager):
     def get_conversations(self, user_id, limit=None, offset=None, order_desc=True):
@@ -11,10 +11,9 @@ class ConversationManager(Manager):
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve conversations: {str(e)}")
 
-    def add_conversation(self, user_id, title=None, model="default", hidden=False):
+    def add_conversation(self, user_id, character_id, title=None, model="default", hidden=False):
         try:
-            user = self.orm.get_user(user_id)
-            conversation = self.orm.add_conversation(user, title, model, hidden)
+            conversation = self.orm.add_conversation(user_id, character_id, title, model, hidden)
             return True, conversation, "Conversation created successfully."
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to create conversation: {str(e)}")
@@ -27,6 +26,16 @@ class ConversationManager(Manager):
             else:
                 return False, None, "Conversation not found."
         except SQLAlchemyError as e:
+            return self._handle_error(f"Failed to retrieve conversation: {str(e)}")
+
+    def get_conversation_by_user_and_character(self, user_id, character_id):
+        try:
+            conversation = self.orm.session.query(Conversation).filter_by(user_id=user_id, character_id=character_id).one()
+            if conversation:
+                return True, conversation, "Conversation retrieved successfully."
+            else:
+                return False, None, "Conversation not found."
+        except Exception as e:
             return self._handle_error(f"Failed to retrieve conversation: {str(e)}")
 
     def edit_conversation(self, conversation_id, **kwargs):

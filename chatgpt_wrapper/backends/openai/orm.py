@@ -179,12 +179,12 @@ class Orm:
         self.log.info(f'Added User with username {username}')
         return user
 
-    def add_conversation(self, user, title, model="default", hidden=False):
+    def add_conversation(self, user_id, character_id, title, model="default", hidden=False):
         now = datetime.datetime.now()
-        conversation = Conversation(user_id=user.id, title=title, model=model, created_time=now, updated_time=now, hidden=False)
+        conversation = Conversation(user_id=user_id, character_id = character_id, title=title, model=model, created_time=now, updated_time=now, hidden=False)
         self.session.add(conversation)
         self.session.commit()
-        self.log.info(f"Added Conversation with title '{title}' for User {user.username}")
+        self.log.info(f"Added Conversation with title '{title}' for User {self.get_user(user_id).username}")
         return conversation
 
     def add_message(self, conversation, role, message):
