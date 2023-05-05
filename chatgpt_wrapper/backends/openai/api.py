@@ -6,6 +6,7 @@ import tiktoken
 from openai.error import OpenAIError
 
 from langchain.chat_models.openai import ChatOpenAI, _convert_dict_to_message
+from chatgpt_wrapper.backends.openai.character import CharacterManager
 
 from chatgpt_wrapper.core.backend import Backend
 import chatgpt_wrapper.core.constants as constants
@@ -21,6 +22,7 @@ class OpenAIAPI(Backend):
         self.user_manager = UserManager(self.config)
         self.conversation = ConversationManager(self.config)
         self.message = MessageManager(self.config)
+        self.character_manager = CharacterManager(self.config)
         self.current_user = None
         self.conversation_tokens = 0
         self.set_llm_class(ChatOpenAI)

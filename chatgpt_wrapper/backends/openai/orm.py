@@ -1,4 +1,5 @@
 import datetime
+from typing import List
 from flask_login import UserMixin
 
 from sqlalchemy.engine import Engine
@@ -137,21 +138,21 @@ class Orm:
         return {c.key: getattr(obj, c.key)
                 for c in inspect(obj).mapper.column_attrs}
 
-    def get_users(self, limit=None, offset=None):
+    def get_users(self, limit=None, offset=None) -> List[User]:
         self.log.debug('Retrieving all Users')
         query = self.session.query(User).order_by(User.username)
         query = self._apply_limit_offset(query, limit, offset)
         users = query.all()
         return users
     
-    def get_characters(self, limit=None, offset=None):
+    def get_character_names(self, limit=None, offset=None) -> List[str]:
         self.log.debug('Retrieving all Characters')
-        query = self.session.query(Character).order_by(Character.name)
+        query = self.session.query(Character.name).order_by(Character.name)
         query = self._apply_limit_offset(query, limit, offset)
-        characters = query.all()
-        return characters
+        names = query.all()
+        return [name for (name,) in names]
 
-    def get_conversations(self, user, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True):
+    def get_conversations(self, user, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True) -> List[Conversation]:
         self.log.debug(f'Retrieving Conversations for User with id {user.id}')
         if order_desc:
             query = self.session.query(Conversation).filter(Conversation.user_id == user.id).order_by(desc(Conversation.id))
@@ -161,7 +162,7 @@ class Orm:
         conversations = query.all()
         return conversations
 
-    def get_messages(self, conversation, limit=None, offset=None, target_id=None):
+    def get_messages(self, conversation, limit=None, offset=None, target_id=None) -> List[Message]:
         self.log.debug(f'Retrieving Messages for Conversation with id {conversation.id}')
         query = self.session.query(Message).filter(Message.conversation_id == conversation.id).order_by(Message.id)
         query = self._apply_limit_offset(query, limit, offset)

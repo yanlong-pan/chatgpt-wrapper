@@ -21,3 +21,4 @@ jsonschema
 flask_inputs
 deepmerge
 alembic
+flask_caching
