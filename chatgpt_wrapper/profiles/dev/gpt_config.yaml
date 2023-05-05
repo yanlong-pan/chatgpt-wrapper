@@ -89,7 +89,7 @@ log:
     # Message format.
     format: '%(name)s - %(levelname)s - %(message)s'
     # Message level (must be valid Python logging module level).
-    level: ERROR
+    level: DEBUG
 
 
 ##########################################################
