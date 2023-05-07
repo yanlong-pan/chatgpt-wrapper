@@ -1,21 +1,21 @@
-"""import data from csv to character table
+"""import_data_from_csv_to_character_table
 
-Revision ID: 20230504142602
-Revises: 20230504141940
-Create Date: 2023-05-04 14:26:03.886868
+Revision ID: 20230506213504
+Revises: 20230506175017
+Create Date: 2023-05-06 21:35:05.438059
 
 """
 import csv
 import os
 from alembic import op
-from sqlalchemy import delete, insert
+import sqlalchemy as sa
 
 from chatgpt_wrapper.backends.openai.orm import Character
 
 
 # revision identifiers, used by Alembic.
-revision = '20230504142602'
-down_revision = '20230504141940'
+revision = '20230506213504'
+down_revision = '20230506175017'
 branch_labels = None
 depends_on = None
 
@@ -29,10 +29,10 @@ def upgrade():
         headers = next(reader)
         
         data = [dict(zip(headers, row)) for row in reader]
-        stmt = insert(Character).values(data)
+        stmt = sa.insert(Character).values(data)
         conn.execute(stmt)
 
 def downgrade():
     conn = op.get_bind()
-    stmt = delete(Character)
+    stmt = sa.delete(Character)
     conn.execute(stmt)

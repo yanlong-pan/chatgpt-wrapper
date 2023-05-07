@@ -14,16 +14,14 @@ class CharacterManager(Manager):
 
     def get_by_name(self, character_name):
         try:
-            character = self.orm.session.query(Character).filter(
-                func.lower(Character.name) == character_name.lower()
-            ).one()
+            character = Character.get_character_by_name(character_name)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to get character: {str(e)}")
         return True, character, self.character_found_message(character)
    
     def get_names(self, limit=None, offset=None):
         try:
-            characters = self.orm.get_character_names(limit, offset)
+            characters = Character.get_character_names(limit, offset)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to get users: {str(e)}")
         return True, characters, "Characters retrieved."

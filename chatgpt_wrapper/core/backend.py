@@ -32,7 +32,7 @@ class Backend(ABC):
     def __init__(self, config=None):
         self.name = self.get_backend_name()
         self.config = config or Config()
-        self.log = Logger(self.__class__.__name__, self.config)
+        self.log = Logger(__name__, self.config)
         self.parent_message_id = None
         self.conversation_id = None
         self.conversation_title_set = None

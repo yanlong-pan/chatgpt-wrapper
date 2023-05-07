@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
 from flask_login import current_user, login_required
@@ -21,7 +21,7 @@ def create_user():
                 password=data['password'])
 
     if success:
-        return jsonify(current_app.user_manager.orm.object_as_dict(user)), 201
+        return jsonify(user.to_json()), 201
     else:
         return default_error_handler(msg)
 
@@ -31,9 +31,10 @@ def get_user(user_id):
     # Check if the requested user ID matches the authenticated user's ID
     if user_id != current_user.id:
         return jsonify({'error': 'Forbidden', 'current_user_id': current_user.id}), 403
-    success, user, msg = current_app.user_manager.get_by_user_id(user_id)
+    success, user, msg = g.gpt.user_manager.get_by_user_id(user_id)
+    # success, user, msg = current_app.user_manager.get_by_user_id(user_id)
     if success:
-        return jsonify(current_app.user_manager.orm.object_as_dict(user))
+        return jsonify(user.to_json())
     else:
         return default_error_handler(msg, status_code=404)
     

@@ -3,11 +3,10 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
-from chatgpt_wrapper.backends.openai.api import OpenAIAPI
+from chatgpt_wrapper.backends.openai.orm import User
 
 from chatgpt_wrapper.blueprints.json_schemas import user_login_schema
 from chatgpt_wrapper.decorators.validation import input_validator
-from chatgpt_wrapper.profiles.config_loader import load_gpt_config
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 login_manager = LoginManager()
@@ -22,7 +21,7 @@ def on_load(state):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return current_app.user_manager.orm.get_user(user_id)
+    return User.get_user(user_id)
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
@@ -36,11 +35,7 @@ def login():
     password = data.get('password')
 
     success, user, msg = current_app.user_manager.login(identifier, password)
-    if success:
-        # Login the user and create a session
-        login_user(user, force=True)
-        # bind a gpt instance to the user
-        user.gpt = OpenAIAPI(load_gpt_config(current_app.config['ENV']), default_user_id=user.id)
+    if success and login_user(user, force=True):
         return jsonify({'success': True, 'current_user_id': current_user.id})
     else:
         return jsonify({'success': False, 'reason': msg}), 401

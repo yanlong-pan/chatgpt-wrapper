@@ -19,10 +19,10 @@ class OpenAIAPI(Backend):
     def __init__(self, config=None, default_user_id=None):
         super().__init__(config)
         self._configure_access_info()
-        self.user_manager = UserManager(self.config)
-        self.conversation = ConversationManager(self.config)
-        self.message = MessageManager(self.config)
-        self.character_manager = CharacterManager(self.config)
+        self.user_manager = UserManager()
+        self.conversation = ConversationManager()
+        self.message = MessageManager()
+        self.character_manager = CharacterManager()
         self.current_user = None
         self.conversation_tokens = 0
         self.set_llm_class(ChatOpenAI)
@@ -107,31 +107,31 @@ class OpenAIAPI(Backend):
     def _extract_message_content(self, message):
         return message.content
 
-    def gen_title_thread(self, conversation):
-        self.log.info(f"Generating title for conversation {conversation.id}")
-        # NOTE: This might need to be smarter in the future, but for now
-        # it should be reasonable to assume that the second record is the
-        # first user message we need for generating the title.
-        success, messages, user_message = self.message.get_messages(conversation.id, limit=2)
-        if success:
-            user_content = messages[1].message
-            new_messages = [
-                self.build_openai_message('system', constants.DEFAULT_TITLE_GENERATION_SYSTEM_PROMPT),
-                self.build_openai_message('user', "%s: %s" % (constants.DEFAULT_TITLE_GENERATION_USER_PROMPT, user_content)),
-            ]
-            success, completion, user_message = self._call_openai_non_streaming(new_messages, temperature=0)
-            if success:
-                title = self._extract_message_content(completion)
-                self.log.info(f"Title generated for conversation {conversation.id}: {title}")
-                success, conversation, user_message = self.conversation.edit_conversation_title(conversation.id, title)
-                if success:
-                    self.log.debug(f"Title saved for conversation {conversation.id}")
-                    return
-        self.log.info(f"Failed to generate title for conversation: {str(user_message)}")
+    # def gen_title_thread(self, conversation):
+    #     self.log.info(f"Generating title for conversation {conversation.id}")
+    #     # NOTE: This might need to be smarter in the future, but for now
+    #     # it should be reasonable to assume that the second record is the
+    #     # first user message we need for generating the title.
+    #     success, messages, user_message = self.message.get_messages(conversation.id, limit=2)
+    #     if success:
+    #         user_content = messages[1].message
+    #         new_messages = [
+    #             self.build_openai_message('system', constants.DEFAULT_TITLE_GENERATION_SYSTEM_PROMPT),
+    #             self.build_openai_message('user', "%s: %s" % (constants.DEFAULT_TITLE_GENERATION_USER_PROMPT, user_content)),
+    #         ]
+    #         success, completion, user_message = self._call_openai_non_streaming(new_messages, temperature=0)
+    #         if success:
+    #             title = self._extract_message_content(completion)
+    #             self.log.info(f"Title generated for conversation {conversation.id}: {title}")
+    #             success, conversation, user_message = self.conversation.edit_conversation_title(conversation.id, title)
+    #             if success:
+    #                 self.log.debug(f"Title saved for conversation {conversation.id}")
+    #                 return
+    #     self.log.info(f"Failed to generate title for conversation: {str(user_message)}")
 
-    def gen_title(self, conversation):
-        thread = threading.Thread(target=self.gen_title_thread, args=(conversation,))
-        thread.start()
+    # def gen_title(self, conversation):
+    #     thread = threading.Thread(target=self.gen_title_thread, args=(conversation,))
+    #     thread.start()
 
     def get_backend_name(self):
         return "chatgpt-api"
@@ -228,7 +228,7 @@ class OpenAIAPI(Backend):
         top_p = self.model_top_p if top_p is None else top_p
         presence_penalty = self.model_presence_penalty if presence_penalty is None else presence_penalty
         frequency_penalty = self.model_frequency_penalty if frequency_penalty is None else frequency_penalty
-        self.log.debug(f"ChatCompletion.create with message count: {len(messages)}, model: {self.model}, temperature: {temperature}, top_p: {top_p}, presence_penalty: {presence_penalty}, frequency_penalty: {frequency_penalty}, stream: {stream})")
+        self.log.debug(f"PID:{os.getpid()} TID:{threading.current_thread().ident} obj_id:{id(self)} ChatCompletion.create with message count: {len(messages)}, model: {self.model}, temperature: {temperature}, top_p: {top_p}, presence_penalty: {presence_penalty}, frequency_penalty: {frequency_penalty}, stream: {stream})")
         args = {
             'model_name': self.model,
             'temperature': temperature,
@@ -252,7 +252,7 @@ class OpenAIAPI(Backend):
         return True, response, "Response received"
 
     def _call_openai_non_streaming(self, messages, temperature=None, top_p=None, presence_penalty=None, frequency_penalty=None):
-        self.log.debug(f"Initiated non-streaming request with message count: {len(messages)}")
+        self.log.debug(f"Initiated non-streaming request with message count: {len(messages)} {threading.current_thread().name}")
         llm, messages = self._build_openai_chat_request(messages, temperature=temperature, top_p=top_p, presence_penalty=presence_penalty, frequency_penalty=frequency_penalty)
         try:
             response = llm(messages)
@@ -343,8 +343,8 @@ class OpenAIAPI(Backend):
                 self.parent_message_id = last_message.id
                 if conversation.title:
                     self.log.debug(f"Conversation {conversation.id} already has title: {conversation.title}")
-                else:
-                    self.gen_title(conversation)
+                # else:
+                #     self.gen_title(conversation)
                 return True, conversation, "Conversation updated with new messages"
             else:
                 return True, response_message, "No current user, conversation not saved"

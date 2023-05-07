@@ -1,11 +1,12 @@
 import logging
 
 from chatgpt_wrapper.core.config import Config
+from chatgpt_wrapper.profiles.config_loader import load_gpt_config
 
 class Logger():
 
     def __new__(cls, name, config=None):
-        config = config or Config()
+        config = config or load_gpt_config()
         logger = logging.getLogger(name)
         logger.setLevel(logging.DEBUG)
         log_console_handler = logging.StreamHandler()

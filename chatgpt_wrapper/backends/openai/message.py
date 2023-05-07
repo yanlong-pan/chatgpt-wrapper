@@ -4,13 +4,13 @@ from chatgpt_wrapper.backends.openai.orm import Manager, Message
 from chatgpt_wrapper.backends.openai.conversation import ConversationManager
 
 class MessageManager(Manager):
-    def __init__(self, config=None):
-        super().__init__(config)
-        self.conversation_manager = ConversationManager(self.config)
+    def __init__(self):
+        super().__init__()
+        self.conversation_manager = ConversationManager()
 
     def get_message(self, message_id):
         try:
-            message = self.orm.session.query(Message).get(message_id)
+            message = Message.session.query(Message).get(message_id)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve message: {str(e)}")
         if not message:
@@ -24,7 +24,7 @@ class MessageManager(Manager):
         if not conversation:
             return False, None, "Conversation not found"
         try:
-            messages = self.orm.get_messages(conversation, limit=limit, offset=offset, target_id=None)
+            messages = Message.get_messages(conversation, limit=limit, offset=offset, target_id=None)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve messages: {str(e)}")
         return True, messages, "Messages retrieved successfully"
@@ -36,7 +36,7 @@ class MessageManager(Manager):
         if not conversation:
             return False, None, "Conversation not found"
         try:
-            message = self.orm.add_message(conversation, role, message)
+            message = Message.add_message(conversation, role, message)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to add message: {str(e)}")
         return True, message, "Message added successfully"
@@ -48,7 +48,7 @@ class MessageManager(Manager):
         if not message:
             return False, None, "Message not found"
         try:
-            updated_message = self.orm.edit_message(message, **kwargs)
+            updated_message = Message.edit_message(message, **kwargs)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to edit message: {str(e)}")
         return True, updated_message, "Message edited successfully"
@@ -60,7 +60,7 @@ class MessageManager(Manager):
         if not message:
             return False, None, "Message not found"
         try:
-            self.orm.delete_message(message)
+            Message.delete_message(message)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to delete message: {str(e)}")
         return True, None, "Message deleted successfully"

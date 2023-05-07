@@ -1,5 +1,5 @@
 FROM accetto/ubuntu-vnc-xfce-python-g3:vscode-firefox
-
+# export $(cat .docker.env | xargs)
 ENV PYTHONPATH=/src:$PYTHONPATH
 
 RUN if [ ! -z "$DATABASE_PATH" ]; then touch "$DATABASE_PATH"; fi

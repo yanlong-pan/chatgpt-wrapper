@@ -1,7 +1,7 @@
 
 import time
-from flask import Blueprint, jsonify, request
-from flask_login import current_user
+from flask import Blueprint, g, jsonify, request
+from flask_login import current_user, login_required
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
 from chatgpt_wrapper.blueprints.json_schemas import chat_schema
@@ -17,6 +17,7 @@ class ChatInputs(Inputs):
 conversations_bp = Blueprint('conversations', __name__, url_prefix='/api/v1/conversations')
 
 @conversations_bp.route("/", methods=["POST"])
+@login_required
 @input_validator(ChatInputs)
 def ask():
     """
@@ -41,15 +42,15 @@ def ask():
     start_time = time.time()
     data = request.get_json()
     
-    _, character, msg = current_user.gpt.character_manager.get_by_name(data["character"])
+    _, character, msg = g.gpt.character_manager.get_by_name(data["character"])
     print(msg)
     print(character)
     
-    success, conversation, user_message = current_user.gpt.conversation.get_conversation_by_user_and_character(current_user.id, character.id)
+    success, conversation, user_message = g.gpt.conversation.get_conversation_by_user_and_character(current_user.id, character.id)
     if success:
-        current_user.gpt.conversation_id = conversation.id
+        g.gpt.conversation_id = conversation.id
     else:
-        current_user.gpt.new_conversation(character.id)
+        g.gpt.new_conversation(character.id)
     
     if data.get('refresh', False): # refresh not yet implemented in OpenAIAPI
         model_customizations = {
@@ -58,7 +59,7 @@ def ask():
     else:
         model_customizations = {}
 
-    success, result, user_message = current_user.gpt.ask(
+    success, result, user_message = g.gpt.ask(
         prompt=data['user_input'],
         model_customizations=model_customizations
     )
@@ -89,7 +90,7 @@ def delete_conversation(conversation_id):
                 "error": "Failed to delete conversation"
             }
     """
-    success, result, user_message = current_user.gpt.delete_conversation(conversation_id)
+    success, result, user_message = g.gpt.delete_conversation(conversation_id)
     if success:
         return user_message
     else:
@@ -126,9 +127,9 @@ def set_title(conversation_id):
     """
     json = request.get_json()
     title = json["title"]
-    success, conversation, user_message = current_user.gpt.set_title(title, conversation_id)
+    success, conversation, user_message = g.gpt.set_title(title, conversation_id)
     if success:
-        return jsonify(current_user.gpt.conversation.orm.object_as_dict(conversation))
+        return jsonify(g.gpt.conversation.orm.object_as_dict(conversation))
     else:
         return default_error_handler("Failed to set title")
 
@@ -162,7 +163,7 @@ def get_history(user_id):
     """
     limit = request.args.get("limit", 20)
     offset = request.args.get("offset", 0)
-    success, result, user_message = current_user.gpt.get_history(limit=limit, offset=offset, user_id=user_id)
+    success, result, user_message = g.gpt.get_history(limit=limit, offset=offset, user_id=user_id)
     if result:
         return jsonify(result)
     else:

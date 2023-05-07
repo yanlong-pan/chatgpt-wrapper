@@ -5,22 +5,22 @@ from chatgpt_wrapper.backends.openai.orm import Conversation, Manager
 class ConversationManager(Manager):
     def get_conversations(self, user_id, limit=None, offset=None, order_desc=True):
         try:
-            user = self.orm.get_user(user_id)
-            conversations = self.orm.get_conversations(user, limit, offset, order_desc)
+            user = Conversation.get_user(user_id)
+            conversations = Conversation.get_conversations(user, limit, offset, order_desc)
             return True, conversations, "Conversations retrieved successfully."
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve conversations: {str(e)}")
 
     def add_conversation(self, user_id, character_id, title=None, model="default", hidden=False):
         try:
-            conversation = self.orm.add_conversation(user_id, character_id, title, model, hidden)
+            conversation = Conversation.add_conversation(user_id, character_id, title, model, hidden)
             return True, conversation, "Conversation created successfully."
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to create conversation: {str(e)}")
 
     def get_conversation(self, conversation_id):
         try:
-            conversation = self.orm.get_conversation(conversation_id)
+            conversation = Conversation.get_conversation(conversation_id)
             if conversation:
                 return True, conversation, "Conversation retrieved successfully."
             else:
@@ -30,7 +30,7 @@ class ConversationManager(Manager):
 
     def get_conversation_by_user_and_character(self, user_id, character_id):
         try:
-            conversation = self.orm.session.query(Conversation).filter_by(user_id=user_id, character_id=character_id).one()
+            conversation = Conversation.query.filter_by(user_id=user_id, character_id=character_id).first()
             if conversation:
                 return True, conversation, "Conversation retrieved successfully."
             else:
@@ -45,7 +45,7 @@ class ConversationManager(Manager):
         if not conversation:
             return False, None, "Conversation not found"
         try:
-            updated_conversation = self.orm.edit_conversation(conversation, **kwargs)
+            updated_conversation = Conversation.edit_conversation(conversation, **kwargs)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to edit conversation: {str(e)}")
         return True, updated_conversation, "Conversation edited successfully"
@@ -55,7 +55,7 @@ class ConversationManager(Manager):
         if not success:
             return success, conversation, message
         try:
-            updated_conversation = self.orm.edit_conversation(conversation, title=new_title)
+            updated_conversation = Conversation.edit_conversation(conversation, title=new_title)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to update conversation title: {str(e)}")
         return True, updated_conversation, "Conversation title updated successfully."
@@ -65,7 +65,7 @@ class ConversationManager(Manager):
         if not success:
             return success, conversation, message
         try:
-            updated_conversation = self.orm.edit_conversation(conversation, hidden=True)
+            updated_conversation = Conversation.edit_conversation(conversation, hidden=True)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to hide conversation: {str(e)}")
         return True, updated_conversation, "Conversation hidden successfully."
@@ -75,7 +75,7 @@ class ConversationManager(Manager):
         if not success:
             return success, conversation, message
         try:
-            updated_conversation = self.orm.edit_conversation(conversation, hidden=False)
+            updated_conversation = Conversation.edit_conversation(conversation, hidden=False)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to unhide conversation: {str(e)}")
         return True, updated_conversation, "Conversation unhidden successfully."
@@ -85,7 +85,7 @@ class ConversationManager(Manager):
         if not success:
             return success, conversation, message
         try:
-            self.orm.delete_conversation(conversation)
+            Conversation.delete_conversation(conversation)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to delete conversation: {str(e)}")
         return True, None, "Conversation deleted successfully."

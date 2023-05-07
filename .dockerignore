@@ -17,3 +17,5 @@ dist/
 *.bak
 *.tmp
 node_modules/
+
+.vscode/*
