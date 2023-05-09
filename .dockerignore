@@ -3,9 +3,11 @@
 
 .git/
 .gitignore
+.github/
+
 
 *.env
-**/__pycache__/*
+**/__pycache__
 **/*.pyc
 
 **/*.db
@@ -16,6 +18,8 @@ dist/
 
 *.bak
 *.tmp
-node_modules/
+**/node_modules
 
-.vscode/*
+.vscode
+
+.DS_Store

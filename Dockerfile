@@ -9,10 +9,7 @@ USER root
 # Pkgs for default database
 RUN apt-get update && apt-get install -y sqlite3
 
-# Fonts
-RUN apt-get -y -qq install fonts-droid-fallback ttf-wqy-zenhei ttf-wqy-microhei fonts-arphic-ukai fonts-arphic-uming fonts-emojione
-
-COPY .dockerignore .
+# COPY .dockerignore .
 
 COPY requirements.txt /tmp/requirements.txt
 
