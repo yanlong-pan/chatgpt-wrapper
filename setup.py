@@ -36,5 +36,5 @@ setup(
         ],
         "chatgpt_wrapper_plugins": [],
     },
-    scripts=["postinstall.sh"],
+    scripts=[],
 )

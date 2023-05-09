@@ -2,14 +2,8 @@ email-validator
 Flask
 Jinja2
 langchain==0.0.152
-names
 openai>=0.27.2
-openpyxl
-playwright
-prompt-toolkit
-pydantic-computed
 pyperclip
-python-frontmatter
 PyYAML
 rich
 sqlalchemy
@@ -23,3 +17,4 @@ deepmerge
 alembic
 flask_caching
 flask_sqlalchemy
+loguru
