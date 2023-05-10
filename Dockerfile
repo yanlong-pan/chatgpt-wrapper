@@ -1,4 +1,5 @@
-FROM accetto/ubuntu-vnc-xfce-python-g3:vscode-firefox
+# FROM accetto/ubuntu-vnc-xfce-python-g3:vscode-firefox
+FROM ubuntu:20.04
 # export $(cat .docker.env | xargs)
 ENV PYTHONPATH=/src:$PYTHONPATH
 
@@ -7,7 +8,10 @@ RUN if [ ! -z "$DATABASE_PATH" ]; then touch "$DATABASE_PATH"; fi
 USER root
 
 # Pkgs for default database
-RUN apt-get update && apt-get install -y sqlite3
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    sqlite3
 
 # COPY .dockerignore .
 
