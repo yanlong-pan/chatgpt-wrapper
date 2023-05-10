@@ -6,11 +6,9 @@ from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc, func
 from chatgpt_wrapper.core import constants
-
-from chatgpt_wrapper.core.logger import Logger
+from chatgpt_wrapper.core.logger import logger
 
 db = SQLAlchemy()
-logger = Logger(__name__)
 
 class Orm(object):
     
@@ -259,9 +257,7 @@ class Message(Base):
         logger.info(f'Deleted Message with id {message.id}')
 
 class Manager:
-    def __init__(self):
-        self.logger = Logger(self.__class__.__name__)
 
     def _handle_error(self, message):
-        self.logger.error(message)
+        logger.error(message)
         return False, None, message

@@ -3,6 +3,7 @@ import logging
 
 from flask import Flask
 from chatgpt_wrapper.backends.openai.user import UserManager
+from chatgpt_wrapper.core.logger import logger
 from chatgpt_wrapper.profiles.config_loader import load_flask_config
 from chatgpt_wrapper.blueprints.bp_auths import auth_bp
 from chatgpt_wrapper.blueprints.bp_users import users_bp
@@ -16,9 +17,11 @@ def create_application(name, timeout=60, proxy=None):
     app = Flask(name)
     load_flask_config(app)
     
+    logger.debug('creating the applicaiton')
+    
     app.user_manager = UserManager()
     
-    db.init_app(app)
+    db.init_app(app)    
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
@@ -30,7 +33,7 @@ def create_application(name, timeout=60, proxy=None):
 
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(logging.StreamHandler())
-    
+        
     cache.init_app(app)
     
     return app

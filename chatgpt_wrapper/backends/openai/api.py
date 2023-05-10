@@ -14,7 +14,7 @@ import chatgpt_wrapper.core.util as util
 from chatgpt_wrapper.backends.openai.user import UserManager
 from chatgpt_wrapper.backends.openai.conversation import ConversationManager
 from chatgpt_wrapper.backends.openai.message import MessageManager
-
+from chatgpt_wrapper.core.logger import logger
 class OpenAIAPI(Backend):
     def __init__(self, config=None, default_user_id=None):
         super().__init__(config)
@@ -52,7 +52,7 @@ class OpenAIAPI(Backend):
 
     def _handle_response(self, success, obj, message):
         if not success:
-            self.log.error(message)
+            logger.error(message)
         return success, obj, message
 
     def get_token_encoding(self, model="gpt-3.5-turbo"):
@@ -108,7 +108,7 @@ class OpenAIAPI(Backend):
         return message.content
 
     # def gen_title_thread(self, conversation):
-    #     self.log.info(f"Generating title for conversation {conversation.id}")
+    #     logger.info(f"Generating title for conversation {conversation.id}")
     #     # NOTE: This might need to be smarter in the future, but for now
     #     # it should be reasonable to assume that the second record is the
     #     # first user message we need for generating the title.
@@ -122,12 +122,12 @@ class OpenAIAPI(Backend):
     #         success, completion, user_message = self._call_openai_non_streaming(new_messages, temperature=0)
     #         if success:
     #             title = self._extract_message_content(completion)
-    #             self.log.info(f"Title generated for conversation {conversation.id}: {title}")
+    #             logger.info(f"Title generated for conversation {conversation.id}: {title}")
     #             success, conversation, user_message = self.conversation.edit_conversation_title(conversation.id, title)
     #             if success:
-    #                 self.log.debug(f"Title saved for conversation {conversation.id}")
+    #                 logger.debug(f"Title saved for conversation {conversation.id}")
     #                 return
-    #     self.log.info(f"Failed to generate title for conversation: {str(user_message)}")
+    #     logger.info(f"Failed to generate title for conversation: {str(user_message)}")
 
     # def gen_title(self, conversation):
     #     thread = threading.Thread(target=self.gen_title_thread, args=(conversation,))
@@ -228,7 +228,7 @@ class OpenAIAPI(Backend):
         top_p = self.model_top_p if top_p is None else top_p
         presence_penalty = self.model_presence_penalty if presence_penalty is None else presence_penalty
         frequency_penalty = self.model_frequency_penalty if frequency_penalty is None else frequency_penalty
-        self.log.debug(f"PID:{os.getpid()} TID:{threading.current_thread().ident} obj_id:{id(self)} ChatCompletion.create with message count: {len(messages)}, model: {self.model}, temperature: {temperature}, top_p: {top_p}, presence_penalty: {presence_penalty}, frequency_penalty: {frequency_penalty}, stream: {stream})")
+        logger.debug(f"PID:{os.getpid()} TID:{threading.current_thread().ident} obj_id:{id(self)} ChatCompletion.create with message count: {len(messages)}, model: {self.model}, temperature: {temperature}, top_p: {top_p}, presence_penalty: {presence_penalty}, frequency_penalty: {frequency_penalty}, stream: {stream})")
         args = {
             'model_name': self.model,
             'temperature': temperature,
@@ -243,7 +243,7 @@ class OpenAIAPI(Backend):
         return llm, messages
 
     def _call_openai_streaming(self, messages, temperature=None, top_p=None, presence_penalty=None, frequency_penalty=None):
-        self.log.debug(f"Initiated streaming request with message count: {len(messages)}")
+        logger.debug(f"Initiated streaming request with message count: {len(messages)}")
         llm, messages = self._build_openai_chat_request(messages, temperature=temperature, top_p=top_p, presence_penalty=presence_penalty, frequency_penalty=frequency_penalty, stream=True)
         try:
             response = llm(messages)
@@ -252,7 +252,7 @@ class OpenAIAPI(Backend):
         return True, response, "Response received"
 
     def _call_openai_non_streaming(self, messages, temperature=None, top_p=None, presence_penalty=None, frequency_penalty=None):
-        self.log.debug(f"Initiated non-streaming request with message count: {len(messages)} {threading.current_thread().name}")
+        logger.debug(f"Initiated non-streaming request with message count: {len(messages)} {threading.current_thread().name}")
         llm, messages = self._build_openai_chat_request(messages, temperature=temperature, top_p=top_p, presence_penalty=presence_penalty, frequency_penalty=frequency_penalty)
         try:
             response = llm(messages)
@@ -316,14 +316,14 @@ class OpenAIAPI(Backend):
         while token_count > max_tokens and len(messages) > 1:
             message = messages.pop(0)
             token_count = self.get_num_tokens_from_messages(messages)
-            self.log.debug(f"Stripping message: {message['role']}, {message['content']} -- new token count: {token_count}")
+            logger.debug(f"Stripping message: {message['role']}, {message['content']} -- new token count: {token_count}")
             stripped_messages_count += 1
         token_count = self.get_num_tokens_from_messages(messages)
         if token_count > max_tokens:
             raise Exception(f"No messages to send, all messages have been stripped, still over max submission tokens: {max_tokens}")
         if stripped_messages_count > 0:
             max_tokens_exceeded_warning = f"Conversation exceeded max submission tokens ({max_tokens}), stripped out {stripped_messages_count} oldest messages before sending, sent {token_count} tokens instead"
-            self.log.warning(max_tokens_exceeded_warning)
+            logger.warning(max_tokens_exceeded_warning)
             util.print_status_message(False, max_tokens_exceeded_warning)
         return messages
 
@@ -342,7 +342,7 @@ class OpenAIAPI(Backend):
                 conversation, last_message = self.add_new_messages_to_conversation(conversation_id, new_messages, response_message, title)
                 self.parent_message_id = last_message.id
                 if conversation.title:
-                    self.log.debug(f"Conversation {conversation.id} already has title: {conversation.title}")
+                    logger.debug(f"Conversation {conversation.id} already has title: {conversation.title}")
                 # else:
                 #     self.gen_title(conversation)
                 return True, conversation, "Conversation updated with new messages"
@@ -356,12 +356,12 @@ class OpenAIAPI(Backend):
         # Streaming loop.
         self.streaming = True
         #    if not self.streaming:
-        #        self.log.info("Request to interrupt streaming")
+        #        logger.info("Request to interrupt streaming")
         #        break
-        self.log.debug(f"Started streaming response at {util.current_datetime().isoformat()}")
+        logger.debug(f"Started streaming response at {util.current_datetime().isoformat()}")
         success, response_obj, user_message = self._call_openai_streaming(messages, **model_customizations)
         if success:
-            self.log.debug(f"Stopped streaming response at {util.current_datetime().isoformat()}")
+            logger.debug(f"Stopped streaming response at {util.current_datetime().isoformat()}")
             response_message = self._extract_message_content(response_obj)
             self.message_clipboard = response_message
             if not self.streaming:

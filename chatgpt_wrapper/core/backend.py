@@ -3,9 +3,9 @@ from typing import Any
 
 from langchain.callbacks.base import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from chatgpt_wrapper.core.logger import logger
 
 from chatgpt_wrapper.core.config import Config
-from chatgpt_wrapper.core.logger import Logger
 from chatgpt_wrapper.core import util
 
 class VerboseStreamingStdOutCallbackHandler(StreamingStdOutCallbackHandler):
@@ -32,7 +32,7 @@ class Backend(ABC):
     def __init__(self, config=None):
         self.name = self.get_backend_name()
         self.config = config or Config()
-        self.log = Logger(__name__, self.config)
+        # logger = ThreadSafeLogger(self.__class__.__name__)
         self.parent_message_id = None
         self.conversation_id = None
         self.conversation_title_set = None
@@ -89,7 +89,7 @@ class Backend(ABC):
         self.message_clipboard = None
 
     def terminate_stream(self, _signal, _frame):
-        self.log.info("Received signal to terminate stream")
+        logger.info("Received signal to terminate stream")
         if self.streaming:
             self.streaming = False
 

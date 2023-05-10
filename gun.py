@@ -3,6 +3,8 @@ import gevent.monkey
 gevent.monkey.patch_all()
 import multiprocessing
 
+from chatgpt_wrapper.core.logger import logger
+
 # 服务地址（adderes:port） 
 port=8888
 bind = f"0.0.0.0:{port}"
@@ -15,7 +17,42 @@ preload_app = True
 reload = True
 x_forwarded_for_header = 'X_FORWARDED-FOR'
 
+accesslog = "-"  # log to stdout
+errorlog = "-"  # log to stderr
+# 使用自定义的 logger 记录访问日志
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
+def access_log(app, req, res, time):
+    logger.info(access_log_format % {
+        'h': req.remote_addr,
+        'l': '-',
+        'u': getattr(req, 'user', '-'),
+        't': req.start_time.strftime('%Y-%m-%d %H:%M:%S'),
+        'r': req.path,
+        's': res.status_code,
+        'b': res.content_length,
+        'f': req.headers.get('Referer', '-'),
+        'a': req.headers.get('User-Agent', '-')
+    })
 
+# 使用自定义的 logger 记录错误日志
+def when_ready(server):
+    logger.info("gunicorn is ready")
+
+def on_starting(server):
+    logger.info("gunicorn is starting")
+
+def on_exit(server):
+    logger.info("gunicorn is exiting")
+
+# 记录 worker 开始和结束的日志
+def worker_int(worker):
+    logger.info("worker spawned (pid: %s)", worker.pid)
+
+def worker_abort(worker):
+    logger.info("worker aborted (pid: %s)", worker.pid)
+
+def worker_exit(server, worker):
+    logger.info("worker exited (pid: %s)", worker.pid)
 # gunicorn -c gun.py main:app
 # export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES on MacOS
 

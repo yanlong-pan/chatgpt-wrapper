@@ -17,4 +17,3 @@ deepmerge
 alembic
 flask_caching
 flask_sqlalchemy
-loguru
