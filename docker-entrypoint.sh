@@ -1,10 +1,7 @@
 #!/bin/bash
 
 # Initialise DB
-cd migrations
-alembic upgrade head
-cd ..
-echo "DB initialised!"
+flask db upgrade
 
 # Run server
 gunicorn -c gun.py flask_app:app --chdir chatgpt_wrapper

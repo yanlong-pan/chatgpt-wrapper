@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: gpt-chat:mysql
     container_name: chatgpt-flask
     restart: always
     volumes:
@@ -14,6 +15,27 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
+      - FLASK_APP=/src/chatgpt_wrapper/flask_app.py
     ports:
       - 8888:8888 # Flask port
     command: "bash /src/docker-entrypoint.sh" # Run the entrypoint script
+    networks:
+      - my-network
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=gpt_chatter
+      - MYSQL_USER=pyl
+      - MYSQL_PASSWORD=pyl123456
+    ports:
+      - 3306:3306
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
