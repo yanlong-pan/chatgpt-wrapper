@@ -1,3 +1,4 @@
+urllib3 < 2
 email-validator
 Flask
 Jinja2
@@ -17,3 +18,4 @@ deepmerge
 alembic
 flask_caching
 flask_sqlalchemy
+nb_log

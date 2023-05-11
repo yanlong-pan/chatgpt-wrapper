@@ -1,22 +1,12 @@
-import logging
-from logging.handlers import TimedRotatingFileHandler
-import os
+from nb_log import get_logger
 
-def setup_logging():
-    # 根据需要自定义日志格式
-    log_format = logging.Formatter('%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
-
-    log_path = "/logs"
-    os.makedirs(log_path, exist_ok=True)
-    # 创建一个定时循环文件处理器，每天创建一个新文件
-    file_handler = TimedRotatingFileHandler(f'{log_path}/app.log', when='D', interval=1)
-    file_handler.setFormatter(log_format)
-    
-    # 创建一个新的日志记录器
-    logger = logging.getLogger("app")
-    logger.setLevel(logging.DEBUG)  # 设置日志级别
-    logger.addHandler(file_handler)
-
-    return logger
-
-logger = setup_logging()
+logger = get_logger(
+    'app',
+    log_level_int = 10,
+    do_not_use_color_handler = True,
+    log_path = '/logs',
+    log_filename = 'test_nb_log.log',
+    log_file_size = 200,
+    log_file_handler_type = 1,
+    formatter_template = 2
+)
