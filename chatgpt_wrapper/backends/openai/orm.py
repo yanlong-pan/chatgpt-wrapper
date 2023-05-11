@@ -39,10 +39,10 @@ class User(Base, UserMixin):
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    default_model = db.Column(db.String(120), nullable=False)
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    default_model = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.now())
     last_login_at = db.Column(db.DateTime, nullable=False)
     preferences = db.Column(db.JSON, nullable=False)
@@ -115,7 +115,9 @@ class Character(Base):
     __tablename__ = 'character'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(80), unique=True, nullable=False)
+    name = db.Column(db.String(255), unique=True, nullable=False)
+    avatar = db.Column(db.String(255), unique=True, nullable=True)
+    voice = db.Column(db.String(255), unique=True, nullable=True)
     profile = db.Column(db.Text, nullable=False)
 
     __table_args__ = (
@@ -142,8 +144,8 @@ class Conversation(Base):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     character_id = db.Column(db.Integer, db.ForeignKey('character.id', ondelete='CASCADE'), nullable=False)
-    title = db.Column(db.String(120), nullable=True)
-    model = db.Column(db.String(80), nullable=False)
+    title = db.Column(db.String(255), nullable=True)
+    model = db.Column(db.String(255), nullable=False)
     created_time = db.Column(db.DateTime, nullable=False, default=db.func.now())
     updated_time = db.Column(db.DateTime, nullable=False, default=db.func.now(), onupdate=db.func.now())
     hidden = db.Column(db.Boolean, nullable=False)
@@ -202,8 +204,8 @@ class Message(Base):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id', ondelete='CASCADE'), nullable=False)
-    role = db.Column(db.String, nullable=False)
-    message = db.Column(db.String, nullable=False)
+    role = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text, nullable=False)
     created_time = db.Column(db.DateTime, nullable=False, default=db.func.now())
     prompt_tokens = db.Column(db.Integer, nullable=False)
     completion_tokens = db.Column(db.Integer, nullable=False)

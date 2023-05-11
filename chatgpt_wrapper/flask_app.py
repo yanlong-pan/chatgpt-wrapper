@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from flask import Flask
+from flask_migrate import Migrate
 from chatgpt_wrapper.backends.openai.user import UserManager
 from chatgpt_wrapper.core.logger import logger
 from chatgpt_wrapper.profiles.config_loader import load_flask_config
@@ -17,11 +18,12 @@ def create_application(name, timeout=60, proxy=None):
     app = Flask(name)
     load_flask_config(app)
     
-    logger.debug('creating the applicaiton')
+    logger.debug('freshing the applicaiton')
     
     app.user_manager = UserManager()
     
-    db.init_app(app)    
+    db.init_app(app)
+    Migrate(app, db)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)

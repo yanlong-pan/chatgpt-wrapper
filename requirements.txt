@@ -18,4 +18,5 @@ deepmerge
 alembic
 flask_caching
 flask_sqlalchemy
+flask_migrate
 nb_log
