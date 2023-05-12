@@ -24,11 +24,9 @@ def create_application(name, timeout=60, proxy=None):
     
     db.init_app(app)
     Migrate(app, db)
-
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(users_bp)
-    app.register_blueprint(conversations_bp)
-    app.register_blueprint(characters_bp)
+    
+    for bp in [auth_bp, users_bp, conversations_bp, characters_bp]:
+        app.register_blueprint(bp)
     
     app.before_request(before_request_callback)
     app.teardown_request(teardown_request_callback)
