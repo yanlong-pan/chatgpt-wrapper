@@ -127,12 +127,21 @@ class Character(Base):
     conversations = db.relationship('Conversation', backref='character', lazy=True, passive_deletes=True)
     
     @classmethod
-    def get_character_names(cls, limit=None, offset=None) -> List[str]:
-        logger.debug('Retrieving all Characters')
-        query = db.session.query(Character.name).order_by(Character.name)
+    def get_characters(cls, limit=None, offset=None):
+        logger.debug('Retrieving character information')
+        query = cls.query.with_entities(cls.name, cls.avatar, cls.voice).order_by(cls.name)
         query = cls._apply_limit_offset(query, limit, offset)
-        names = query.all()
-        return [name for (name,) in names]
+        results = query.all()
+        character_info = [
+            {
+                name: {
+                    'avatar': avatar,
+                    'voice': voice
+                }
+            }
+            for name, avatar, voice in results
+        ]
+        return character_info
 
     @classmethod
     def get_character_by_name(cls, character_name: str) -> 'Character':

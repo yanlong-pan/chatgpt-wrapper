@@ -18,10 +18,3 @@ class CharacterManager(Manager):
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to get character: {str(e)}")
         return True, character, self.character_found_message(character)
-   
-    def get_names(self, limit=None, offset=None):
-        try:
-            characters = Character.get_character_names(limit, offset)
-        except SQLAlchemyError as e:
-            return self._handle_error(f"Failed to get users: {str(e)}")
-        return True, characters, "Characters retrieved."
