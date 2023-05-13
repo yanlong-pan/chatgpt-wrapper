@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from flask import Flask
+from flask_cors import CORS
 from flask_migrate import Migrate
 from chatgpt_wrapper.backends.openai.user import UserManager
 from chatgpt_wrapper.core.logger import logger
@@ -24,6 +25,8 @@ def create_application(name, timeout=60, proxy=None):
     
     db.init_app(app)
     Migrate(app, db)
+    
+    CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
     
     for bp in [auth_bp, users_bp, conversations_bp, characters_bp]:
         app.register_blueprint(bp)

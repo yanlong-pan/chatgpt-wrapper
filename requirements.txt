@@ -21,3 +21,4 @@ flask_sqlalchemy
 flask_migrate
 nb_log
 pymysql
+flask-cors
