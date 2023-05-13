@@ -3,7 +3,10 @@ FROM ubuntu:20.04
 # export $(cat .docker.env | xargs)
 ENV PYTHONPATH=/src:$PYTHONPATH
 
-RUN if [ ! -z "$DATABASE_PATH" ]; then touch "$DATABASE_PATH"; fi
+ARG TZ=Asia/Shanghai
+ENV TZ=${TZ}
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 USER root
 
@@ -11,7 +14,7 @@ USER root
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
-    sqlite3
+    tzdata
 
 # COPY .dockerignore .
 
