@@ -81,7 +81,7 @@ class ConversationManager(Manager):
         return True, updated_conversation, "Conversation unhidden successfully."
 
     def delete_conversation(self, user_id, conversation_id):
-        conversation = Conversation.query.filter_by(user_id=user_id, id=conversation_id).first()
+        conversation = Conversation.get_user_conversation(user_id, conversation_id)
         if not conversation:
             return False, conversation, "Conversation not found"
         try:

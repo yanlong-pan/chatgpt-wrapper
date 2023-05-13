@@ -81,17 +81,6 @@ class UserManager(Manager):
             return self._handle_error(f"Failed to log in user: {str(e)}")
         return True, user, "Login successful."
 
-    def logout(self, user_id):
-        # Logout functionality is usually implemented on the frontend, so this method can be left blank
-        pass
-
-    def get_users(self, limit=None, offset=None):
-        try:
-            users = User.get_users(limit, offset)
-        except SQLAlchemyError as e:
-            return self._handle_error(f"Failed to get users: {str(e)}")
-        return True, users, "Users retrieved."
-
     def edit_user(self, user_id, username=None, email=None, password=None, default_model=None):
         success, user, message = self.get_by_user_id(user_id)
         if not success:
@@ -123,15 +112,3 @@ class UserManager(Manager):
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to edit user: {str(e)}")
         return True, user, "User successfully edited."
-
-    def delete_user(self, user_id):
-        success, user, message = self.get_by_user_id(user_id)
-        if not success:
-            return success, user, message
-        if not user:
-            return False, None, "User not found."
-        try:
-            user = User.delete_user(user)
-        except SQLAlchemyError as e:
-            return self._handle_error(f"Failed to delete user: {str(e)}")
-        return True, user, "User successfully deleted."

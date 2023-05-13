@@ -55,13 +55,6 @@ class User(Base, UserMixin):
         db.Index('user_created_at_idx', created_at),
         db.Index('user_last_login_at', last_login_at),
     )
-    
-    @classmethod
-    def get_users(cls, limit=None, offset=None) -> List['User']:
-        db.session.flush()
-        query = cls.query.order_by(User.username)
-        query = cls._apply_limit_offset(query, limit, offset)
-        return query.all()
 
     @classmethod
     def add_user(cls, username, password, email, default_model="default", preferences={}):
@@ -86,7 +79,6 @@ class User(Base, UserMixin):
             username_filter |= cls.email == username
             email_filter |= cls.username == email
         return cls.query.filter(username_filter | email_filter).first()
-
         
     @classmethod
     def edit_user(cls, user, **kwargs):
@@ -95,21 +87,6 @@ class User(Base, UserMixin):
         db.session.commit()
         logger.info(f'Edited User with id {user.id}')
         return user
-    
-    @classmethod
-    def delete_user(cls, user):
-        db.session.delete(user)
-        db.session.commit()
-        logger.info(f'Deleted User with id {user.id}')
-        return user
-
-    @property
-    def gpt(self):
-        return getattr(self, '_gpt')
-
-    @gpt.setter
-    def gpt(self, value):
-        self._gpt = value
         
 class Character(Base):
     __tablename__ = 'character'
@@ -173,7 +150,7 @@ class Conversation(Base):
     def get_conversations(cls, user, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True) -> List['Conversation']:
         logger.debug(f'Retrieving Conversations for User with id {user.id}')
         if order_desc:
-            query = cls.query.filter_by(user_id=user.id).order_by(desc(cls.id))
+            query = cls.query.filter_by(user_id=user.id, is_deleted=False).order_by(desc(cls.id))
         else:
             query = cls.query.order_by(cls.id)
         query = cls._apply_limit_offset(query, limit, offset)
@@ -195,6 +172,10 @@ class Conversation(Base):
         return conversation
 
     @classmethod
+    def get_user_conversation(cls, user_id, conversation_id):
+        return cls.query.filter_by(user_id=user_id, id=conversation_id).first()
+        
+    @classmethod
     def edit_conversation(cls, conversation, **kwargs):
         for key, value in kwargs.items():
             setattr(conversation, key, value)
@@ -204,9 +185,12 @@ class Conversation(Base):
 
     @classmethod
     def delete_conversation(cls, conversation):
-        db.session.delete(conversation)
-        db.session.commit()
+        conversation.soft_delete()
         logger.info(f'Deleted Conversation with id {conversation.id}')
+        # Soft delete all associated messages
+        for message in conversation.messages:
+            message.soft_delete()
+            logger.info(f'Deleted Message with id {message.id}')
 
 class Message(Base):
     __tablename__ = 'message'
@@ -229,7 +213,7 @@ class Message(Base):
     @classmethod
     def get_messages(cls, conversation, limit=None, offset=None, target_id=None) -> List['Message']:
         logger.debug(f'Retrieving Messages for Conversation with id {conversation.id}')
-        query = cls.query.filter_by(conversation_id=conversation.id).order_by(cls.id)
+        query = cls.query.filter_by(conversation_id=conversation.id, is_deleted=False).order_by(cls.id)
         query = cls._apply_limit_offset(query, limit, offset)
         if target_id:
             query = query.filter(cls.id <= target_id)
@@ -251,7 +235,6 @@ class Message(Base):
         message = db.session.get(cls, message_id)
         return message
 
-
     @classmethod
     def edit_message(cls, message, **kwargs):
         for key, value in kwargs.items():
@@ -260,11 +243,9 @@ class Message(Base):
         logger.info(f'Edited Message with id {message.id}')
         return message
 
-
     @classmethod
     def delete_message(cls, message):
-        db.session.delete(message)
-        db.session.commit()
+        message.soft_delete()
         logger.info(f'Deleted Message with id {message.id}')
 
 class Manager:
