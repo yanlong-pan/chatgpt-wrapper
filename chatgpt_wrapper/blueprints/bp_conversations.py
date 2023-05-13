@@ -43,9 +43,7 @@ def ask():
     data = request.get_json()
     
     _, character, msg = g.gpt.character_manager.get_by_name(data["character"])
-    print(msg)
-    print(character)
-    
+ 
     success, conversation, user_message = g.gpt.conversation.get_conversation_by_user_and_character(current_user.id, character.id)
     if success:
         g.gpt.conversation_id = conversation.id

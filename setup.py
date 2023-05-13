@@ -13,6 +13,7 @@ with open('requirements.txt') as f:
 with open(path.join(FILE_DIR, 'chatgpt_wrapper', 'version.py')) as f:
     version = re.match(r'^__version__ = "([\w\.]+)"$', f.read().strip())[1]
 
+# TODO: update relevant info
 setup(
     name="chatGPT",
     version=version,
