@@ -10,6 +10,7 @@ from chatgpt_wrapper.blueprints.json_schemas import chat_schema
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
 from chatgpt_wrapper.decorators.validation import input_validator
+from chatgpt_wrapper.utils.cache import get_cached_characters
 
 class ChatInputs(Inputs):
     json = [JsonSchema(schema=chat_schema)]
@@ -42,13 +43,16 @@ def ask():
     start_time = time.time()
     data = request.get_json()
     
-    _, character, msg = g.gpt.character_manager.get_by_name(data["character"])
+    if data["character"] not in [k for c in get_cached_characters() for k,_ in c.items()]:
+        return default_error_handler('Invalid character', 422)
+    
+    _, character, _ = g.gpt.character_manager.get_by_name(data["character"])
  
-    success, conversation, user_message = g.gpt.conversation.get_conversation_by_user_and_character(current_user.id, character.id)
+    success, conversation, _ = g.gpt.conversation_manager.get_conversation_by_user_and_character(current_user.id, character.id)
     if success:
         g.gpt.conversation_id = conversation.id
     else:
-        g.gpt.new_conversation(character.id)
+        g.gpt.new_conversation(current_user.id, character.id)
     
     if data.get('refresh', False): # refresh not yet implemented in OpenAIAPI
         model_customizations = {
@@ -63,7 +67,11 @@ def ask():
     )
     end_time = time.time()
     execution_time = end_time - start_time
-    return jsonify({"execution_time": execution_time, "result": result})
+    
+    if success:
+        return jsonify({"execution_time": execution_time, "result": result})
+    else:
+        return default_error_handler(user_message)
 
 @conversations_bp.route("/<string:conversation_id>", methods=["DELETE"])
 @login_required
@@ -128,7 +136,7 @@ def set_title(conversation_id):
     title = json["title"]
     success, conversation, user_message = g.gpt.set_title(title, conversation_id)
     if success:
-        return jsonify(g.gpt.conversation.orm.object_as_dict(conversation))
+        return jsonify(g.gpt.conversation_manager.orm.object_as_dict(conversation))
     else:
         return default_error_handler("Failed to set title")
 
