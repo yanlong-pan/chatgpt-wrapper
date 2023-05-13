@@ -44,8 +44,8 @@ user_login_schema = reduce(always_merger.merge, [
 ])
 
 chat_schema = reduce(always_merger.merge, [
-    user_input_schema,
-    character_schema,
-    refresh_schema,
+    deepcopy(user_input_schema),
+    deepcopy(character_schema),
+    deepcopy(refresh_schema),
     {'required': ['user_input', 'character']}
 ])
