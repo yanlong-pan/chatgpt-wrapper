@@ -49,13 +49,6 @@ class Backend(ABC):
         return {
             'temperature': 0,
             'model_name': self.model,
-            # TODO: This used to work on the deprecated OpenAIChat class, but now no longer works.
-            # 'prefix_messages': [
-            #     {
-            #         'role': 'system',
-            #         'content': 'You are a helpful assistant that is very good at problem solving who thinks step by step.',
-            #     },
-            # ]
         }
 
     def streaming_args(self, interrupt_handler=False):
