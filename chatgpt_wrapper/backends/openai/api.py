@@ -3,8 +3,6 @@ import threading
 import openai
 import tiktoken
 
-from openai.error import OpenAIError
-
 from langchain.chat_models.openai import ChatOpenAI, _convert_dict_to_message
 from chatgpt_wrapper.backends.openai.character import CharacterManager
 
@@ -16,14 +14,13 @@ from chatgpt_wrapper.backends.openai.conversation import ConversationManager
 from chatgpt_wrapper.backends.openai.message import MessageManager
 from chatgpt_wrapper.core.logger import logger
 class OpenAIAPI(Backend):
-    def __init__(self, config=None, default_user_id=None):
+    def __init__(self, config=None):
         super().__init__(config)
         self._configure_access_info()
         self.user_manager = UserManager()
-        self.conversation = ConversationManager()
+        self.conversation_manager = ConversationManager()
         self.message = MessageManager()
         self.character_manager = CharacterManager()
-        self.current_user = None
         self.conversation_tokens = 0
         self.set_llm_class(ChatOpenAI)
         self.set_model_system_message()
@@ -32,11 +29,6 @@ class OpenAIAPI(Backend):
         self.set_model_presence_penalty(self.config.get('chat.model_customizations.presence_penalty'))
         self.set_model_frequency_penalty(self.config.get('chat.model_customizations.frequency_penalty'))
         self.set_model_max_submission_tokens(self.config.get('chat.model_customizations.max_submission_tokens'))
-        if default_user_id is not None:
-            success, user, user_message = self.user_manager.get_by_user_id(default_user_id)
-            if not success:
-                raise Exception(user_message)
-            self.set_current_user(user)
 
     def _configure_access_info(self):
         self.openai = openai
@@ -79,7 +71,7 @@ class OpenAIAPI(Backend):
                     num_tokens += -1  # role is always required and always 1 token
         num_tokens += 2  # every reply is primed with <im_start>assistant
         return num_tokens
-
+        
     def switch_to_conversation(self, conversation_id, parent_message_id):
         super().switch_to_conversation(conversation_id, parent_message_id)
         tokens = self.get_conversation_token_count(conversation_id)
@@ -106,32 +98,6 @@ class OpenAIAPI(Backend):
 
     def _extract_message_content(self, message):
         return message.content
-
-    # def gen_title_thread(self, conversation):
-    #     logger.info(f"Generating title for conversation {conversation.id}")
-    #     # NOTE: This might need to be smarter in the future, but for now
-    #     # it should be reasonable to assume that the second record is the
-    #     # first user message we need for generating the title.
-    #     success, messages, user_message = self.message.get_messages(conversation.id, limit=2)
-    #     if success:
-    #         user_content = messages[1].message
-    #         new_messages = [
-    #             self.build_openai_message('system', constants.DEFAULT_TITLE_GENERATION_SYSTEM_PROMPT),
-    #             self.build_openai_message('user', "%s: %s" % (constants.DEFAULT_TITLE_GENERATION_USER_PROMPT, user_content)),
-    #         ]
-    #         success, completion, user_message = self._call_openai_non_streaming(new_messages, temperature=0)
-    #         if success:
-    #             title = self._extract_message_content(completion)
-    #             logger.info(f"Title generated for conversation {conversation.id}: {title}")
-    #             success, conversation, user_message = self.conversation.edit_conversation_title(conversation.id, title)
-    #             if success:
-    #                 logger.debug(f"Title saved for conversation {conversation.id}")
-    #                 return
-    #     logger.info(f"Failed to generate title for conversation: {str(user_message)}")
-
-    # def gen_title(self, conversation):
-    #     thread = threading.Thread(target=self.gen_title_thread, args=(conversation,))
-    #     thread.start()
 
     def get_backend_name(self):
         return "chatgpt-api"
@@ -202,7 +168,7 @@ class OpenAIAPI(Backend):
 
     def add_new_messages_to_conversation(self, conversation_id, new_messages, response_message, title=None):
         conversation_id = conversation_id or self.conversation_id
-        success, conversation, message = self.conversation.get_conversation(conversation_id)
+        success, conversation, message = self.conversation_manager.get_conversation(conversation_id)
         if not success:
             raise Exception(message)
         for m in new_messages:
@@ -260,30 +226,22 @@ class OpenAIAPI(Backend):
             return False, messages, e
         return True, response, "Response received"
 
-    def set_current_user(self, user=None):
-        self.current_user = user
-        if self.current_user:
-            self.set_active_model(self.current_user.default_model)
-        else:
-            self.set_active_model()
-
     def conversation_data_to_messages(self, conversation_data):
         return conversation_data['messages']
 
     def delete_conversation(self, user_id, conversation_id):
-        success, conversation, message = self.conversation.delete_conversation(user_id, conversation_id)
+        success, conversation, message = self.conversation_manager.delete_conversation(user_id, conversation_id)
         return self._handle_response(success, conversation, message)
 
     def set_title(self, title, conversation_id=None):
         conversation_id = conversation_id if conversation_id else self.conversation_id
-        success, conversation, user_message = self.conversation.edit_conversation_title(conversation_id, title)
+        success, conversation, user_message = self.conversation_manager.edit_conversation_title(conversation_id, title)
         return self._handle_response(success, conversation, user_message)
 
-    def get_history(self, limit=20, offset=0, user_id=None):
-        user_id = user_id if user_id else self.current_user.id
-        success, conversations, message = self.conversation.get_conversations(user_id, limit=limit, offset=offset)
+    def get_history(self, user_id, limit=20, offset=0):
+        success, conversations, message = self.conversation_manager.get_conversations(user_id, limit=limit, offset=offset)
         if success:
-            history = {m.id: self.conversation.orm.object_as_dict(m) for m in conversations}
+            history = {m.id: self.conversation_manager.orm.object_as_dict(m) for m in conversations}
             return success, history, message
         return self._handle_response(success, conversations, message)
 
@@ -300,10 +258,10 @@ class OpenAIAPI(Backend):
                 return success, conversation_data, message
         return self._handle_response(success, conversation, message)
 
-    def new_conversation(self, character_id):
+    def new_conversation(self, user_id, character_id):
         super().new_conversation()
         self.conversation_tokens = 0
-        success, conversation, message = self.conversation.add_conversation(self.current_user.id, character_id, model=self.model)
+        success, conversation, message = self.conversation_manager.add_conversation(user_id, character_id, model=self.model)
         if success:    
             self.conversation_id = conversation.id
             return conversation
@@ -337,16 +295,10 @@ class OpenAIAPI(Backend):
     def _ask_request_post(self, conversation_id, new_messages, response_message, title=None):
         conversation_id = conversation_id or self.conversation_id
         if response_message:
-            if self.current_user:
-                conversation, last_message = self.add_new_messages_to_conversation(conversation_id, new_messages, response_message, title)
-                self.parent_message_id = last_message.id
-                if conversation.title:
-                    logger.debug(f"Conversation {conversation.id} already has title: {conversation.title}")
-                # else:
-                #     self.gen_title(conversation)
-                return True, conversation, "Conversation updated with new messages"
-            else:
-                return True, response_message, "No current user, conversation not saved"
+            conversation, last_message = self.add_new_messages_to_conversation(conversation_id, new_messages, response_message, title)
+            self.parent_message_id = last_message.id
+            return True, conversation, "Conversation updated with new messages"
+            
         return False, None, "Conversation not updated with new messages"
 
     def ask_stream(self, prompt, title=None, model_customizations={}):
