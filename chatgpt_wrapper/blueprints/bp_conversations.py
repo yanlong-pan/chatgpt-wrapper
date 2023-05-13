@@ -66,6 +66,7 @@ def ask():
     return jsonify({"execution_time": execution_time, "result": result})
 
 @conversations_bp.route("/<string:conversation_id>", methods=["DELETE"])
+@login_required
 def delete_conversation(conversation_id):
     """
     Delete a conversation.
@@ -88,9 +89,9 @@ def delete_conversation(conversation_id):
                 "error": "Failed to delete conversation"
             }
     """
-    success, result, user_message = g.gpt.delete_conversation(conversation_id)
+    success, _, user_message = g.gpt.delete_conversation(current_user.id, conversation_id)
     if success:
-        return user_message
+        return jsonify({'success': True, 'message': user_message}), 200
     else:
         return default_error_handler(user_message)
 

@@ -80,10 +80,10 @@ class ConversationManager(Manager):
             return self._handle_error(f"Failed to unhide conversation: {str(e)}")
         return True, updated_conversation, "Conversation unhidden successfully."
 
-    def delete_conversation(self, conversation_id):
-        success, conversation, message = self.get_conversation(conversation_id)
-        if not success:
-            return success, conversation, message
+    def delete_conversation(self, user_id, conversation_id):
+        conversation = Conversation.query.filter_by(user_id=user_id, id=conversation_id).first()
+        if not conversation:
+            return False, conversation, "Conversation not found"
         try:
             Conversation.delete_conversation(conversation)
         except SQLAlchemyError as e:

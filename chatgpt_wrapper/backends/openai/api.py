@@ -270,9 +270,8 @@ class OpenAIAPI(Backend):
     def conversation_data_to_messages(self, conversation_data):
         return conversation_data['messages']
 
-    def delete_conversation(self, conversation_id=None):
-        conversation_id = conversation_id if conversation_id else self.conversation_id
-        success, conversation, message = self.conversation.delete_conversation(conversation_id)
+    def delete_conversation(self, user_id, conversation_id):
+        success, conversation, message = self.conversation.delete_conversation(user_id, conversation_id)
         return self._handle_response(success, conversation, message)
 
     def set_title(self, title, conversation_id=None):
