@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, g, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
 from flask_login import current_user, login_required
@@ -16,7 +16,7 @@ class RegisterInputs(Inputs):
 @input_validator(RegisterInputs)
 def create_user():
     data = request.get_json()
-    success, user, msg = current_app.user_manager.register(email=data['email'],
+    success, user, msg = g.gpt.user_manager.register(email=data['email'],
                 username=data['username'],
                 password=data['password'])
 
@@ -32,7 +32,6 @@ def get_user(user_id):
     if user_id != current_user.id:
         return jsonify({'error': 'Forbidden', 'current_user_id': current_user.id}), 403
     success, user, msg = g.gpt.user_manager.get_by_user_id(user_id)
-    # success, user, msg = current_app.user_manager.get_by_user_id(user_id)
     if success:
         return jsonify(user.to_json())
     else:

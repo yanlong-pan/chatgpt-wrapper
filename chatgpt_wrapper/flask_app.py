@@ -21,8 +21,6 @@ def create_application(name, timeout=60, proxy=None):
     
     logger.debug('freshing the applicaiton')
     
-    app.user_manager = UserManager()
-    
     db.init_app(app)
     Migrate(app, db)
     

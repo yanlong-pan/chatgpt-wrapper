@@ -1,5 +1,4 @@
-# app/auth/__init__.py
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, g, jsonify, request
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
@@ -34,7 +33,7 @@ def login():
     identifier = data.get('email') or data.get('username')
     password = data.get('password')
 
-    success, user, msg = current_app.user_manager.login(identifier, password)
+    success, user, msg = g.gpt.user_manager.login(identifier, password)
     if success and login_user(user, force=True):
         return jsonify({'success': True, 'current_user_id': current_user.id})
     else:
