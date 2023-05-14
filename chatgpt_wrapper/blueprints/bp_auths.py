@@ -33,7 +33,7 @@ def login():
     identifier = data.get('email') or data.get('username')
     password = data.get('password')
 
-    success, user, msg = g.gpt.user_manager.login(identifier, password)
+    success, user, msg = g.gpt.um.login(identifier, password)
     if success and login_user(user, force=True):
         return jsonify({'success': True, 'current_user_id': current_user.id})
     else:

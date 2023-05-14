@@ -18,7 +18,7 @@ class OpenAIAPI(Backend):
     def __init__(self, config=None):
         super().__init__(config)
         self._configure_access_info()
-        self.user_manager = UserManager()
+        self.um = UserManager()
         self.cm = ConversationManager()
         self.message = MessageManager()
         self.character_manager = CharacterManager()

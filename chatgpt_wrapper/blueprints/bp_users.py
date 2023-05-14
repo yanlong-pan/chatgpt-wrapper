@@ -16,7 +16,7 @@ class RegisterInputs(Inputs):
 @input_validator(RegisterInputs)
 def create_user():
     data = request.get_json()
-    success, user, msg = g.gpt.user_manager.register(email=data['email'],
+    success, user, msg = g.gpt.um.register(email=data['email'],
                 username=data['username'],
                 password=data['password'])
 
@@ -31,7 +31,7 @@ def get_user(user_id):
     # Check if the requested user ID matches the authenticated user's ID
     if user_id != current_user.id:
         return jsonify({'error': 'Forbidden', 'current_user_id': current_user.id}), 403
-    success, user, msg = g.gpt.user_manager.get_by_user_id(user_id)
+    success, user, msg = g.gpt.um.get_by_user_id(user_id)
     if success:
         return jsonify(user.to_json())
     else:
