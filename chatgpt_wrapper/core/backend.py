@@ -86,10 +86,6 @@ class Backend(ABC):
         if self.streaming:
             self.streaming = False
 
-    def switch_to_conversation(self, conversation_id, parent_message_id):
-        self.conversation_id = conversation_id
-        self.parent_message_id = parent_message_id
-
     def get_runtime_config(self):
         return ""
 
@@ -99,26 +95,6 @@ class Backend(ABC):
 
     @abstractmethod
     def set_available_models(self):
-        pass
-
-    @abstractmethod
-    def conversation_data_to_messages(self, conversation_data):
-        pass
-
-    @abstractmethod
-    def delete_conversation(self, uuid=None):
-        pass
-
-    @abstractmethod
-    def set_title(self, title, conversation_id=None):
-        pass
-
-    @abstractmethod
-    def get_history(self, limit=20, offset=0):
-        pass
-
-    @abstractmethod
-    def get_conversation(self, uuid=None):
         pass
 
     @abstractmethod
