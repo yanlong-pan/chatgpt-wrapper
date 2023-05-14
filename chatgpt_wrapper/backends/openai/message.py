@@ -1,40 +1,29 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from chatgpt_wrapper.backends.openai.orm import Manager, Message
+from chatgpt_wrapper.backends.openai.orm import Conversation, Manager, Message
 from chatgpt_wrapper.backends.openai.conversation import ConversationManager
 
 class MessageManager(Manager):
     def __init__(self):
         super().__init__()
-        self.conversation_manager = ConversationManager()
 
     def get_message(self, message_id):
         try:
-            message = Message.session.query(Message).get(message_id)
+            message = Message.query.get(message_id)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve message: {str(e)}")
         if not message:
             return False, None, "Message not found"
         return True, message, "Message retrieved successfully"
 
-    def get_messages(self, conversation_id, limit=None, offset=None, target_id=None):
-        success, conversation, message = self.conversation_manager.get_conversation(conversation_id)
-        if not success:
-            return success, conversation, message
-        if not conversation:
-            return False, None, "Conversation not found"
+    def get_messages(self, conversation: Conversation, limit=None, offset=None, target_id=None):
         try:
             messages = Message.get_messages(conversation, limit=limit, offset=offset, target_id=None)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve messages: {str(e)}")
         return True, messages, "Messages retrieved successfully"
 
-    def add_message(self, conversation_id, role, message):
-        success, conversation, user_message = self.conversation_manager.get_conversation(conversation_id)
-        if not success:
-            return success, conversation, user_message
-        if not conversation:
-            return False, None, "Conversation not found"
+    def add_message(self, conversation: Conversation, role, message):
         try:
             message = Message.add_message(conversation, role, message)
         except SQLAlchemyError as e:

@@ -5,6 +5,7 @@ import tiktoken
 
 from langchain.chat_models.openai import ChatOpenAI, _convert_dict_to_message
 from chatgpt_wrapper.backends.openai.character import CharacterManager
+from chatgpt_wrapper.backends.openai.orm import Conversation
 
 from chatgpt_wrapper.core.backend import Backend
 import chatgpt_wrapper.core.constants as constants
@@ -21,6 +22,7 @@ class OpenAIAPI(Backend):
         self.conversation_manager = ConversationManager()
         self.message = MessageManager()
         self.character_manager = CharacterManager()
+        self.conversation = None
         self.conversation_tokens = 0
         self.set_llm_class(ChatOpenAI)
         self.set_model_system_message()
@@ -72,14 +74,14 @@ class OpenAIAPI(Backend):
         num_tokens += 2  # every reply is primed with <im_start>assistant
         return num_tokens
         
-    def switch_to_conversation(self, conversation_id, parent_message_id):
-        super().switch_to_conversation(conversation_id, parent_message_id)
-        tokens = self.get_conversation_token_count(conversation_id)
+    def switch_to_conversation(self, conversation, parent_message_id):
+        self.parent_message_id = parent_message_id
+        self.bind_conversation(conversation)
+        tokens = self.get_conversation_token_count()
         self.conversation_tokens = tokens
 
-    def get_conversation_token_count(self, conversation_id=None):
-        conversation_id = conversation_id or self.conversation_id
-        success, old_messages, user_message = self.message.get_messages(conversation_id)
+    def get_conversation_token_count(self):
+        success, old_messages, user_message = self.message.get_messages(self.conversation)
         if not success:
             raise Exception(user_message)
         token_messages = self.prepare_prompt_messsage_context(old_messages)
@@ -148,13 +150,12 @@ class OpenAIAPI(Backend):
         }
         return message
 
-    def prepare_prompt_conversation_messages(self, prompt, conversation_id=None, target_id=None, system_message=None):
+    def prepare_prompt_conversation_messages(self, prompt, target_id=None, system_message=None):
         old_messages = []
         new_messages = []
-        if conversation_id:
-            success, old_messages, message = self.message.get_messages(conversation_id, target_id=target_id)
-            if not success:
-                raise Exception(message)
+        success, old_messages, message = self.message.get_messages(self.conversation, target_id=target_id)
+        if not success:
+            raise Exception(message)
         if len(old_messages) == 0:
             system_message = system_message or self.model_system_message
             new_messages.append(self.build_openai_message('system', system_message))
@@ -166,25 +167,21 @@ class OpenAIAPI(Backend):
         messages.extend(new_messages)
         return messages
 
-    def add_new_messages_to_conversation(self, conversation_id, new_messages, response_message, title=None):
-        conversation_id = conversation_id or self.conversation_id
-        success, conversation, message = self.conversation_manager.get_conversation(conversation_id)
-        if not success:
-            raise Exception(message)
+    def add_new_messages_to_conversation(self, new_messages, response_message, title=None):
         for m in new_messages:
-            success, message, user_message = self.message.add_message(conversation.id, m['role'], m['content'])
+            success, message, user_message = self.message.add_message(self.conversation, m['role'], m['content'])
             if not success:
                 raise Exception(user_message)
-        success, last_message, user_message = self.message.add_message(conversation.id, 'assistant', response_message)
+        success, last_message, user_message = self.message.add_message(self.conversation, 'assistant', response_message)
         if not success:
             raise Exception(user_message)
+        # TODO: refine token count
         tokens = self.get_conversation_token_count()
         self.conversation_tokens = tokens
-        return conversation, last_message
+        return self.conversation, last_message
 
-    def add_message(self, role, message, conversation_id=None):
-        conversation_id = conversation_id or self.conversation_id
-        success, message, user_message = self.message.add_message(conversation_id, role, message)
+    def add_message(self, role, message):
+        success, message, user_message = self.message.add_message(self.conversation, role, message)
         if not success:
             raise Exception(user_message)
         return message
@@ -226,44 +223,27 @@ class OpenAIAPI(Backend):
             return False, messages, e
         return True, response, "Response received"
 
-    def conversation_data_to_messages(self, conversation_data):
-        return conversation_data['messages']
-
     def delete_conversation(self, user_id, conversation_id):
         success, conversation, message = self.conversation_manager.delete_conversation(user_id, conversation_id)
         return self._handle_response(success, conversation, message)
 
-    def set_title(self, title, conversation_id=None):
-        conversation_id = conversation_id if conversation_id else self.conversation_id
-        success, conversation, user_message = self.conversation_manager.edit_conversation_title(conversation_id, title)
-        return self._handle_response(success, conversation, user_message)
-
     def get_history(self, user_id, limit=20, offset=0):
         success, conversations, message = self.conversation_manager.get_conversations(user_id, limit=limit, offset=offset)
         if success:
-            history = {m.id: self.conversation_manager.orm.object_as_dict(m) for m in conversations}
+            history = {c.id: c.to_json() for c in conversations}
             return success, history, message
         return self._handle_response(success, conversations, message)
 
-    def get_conversation(self, id=None):
-        id = id if id else self.conversation_id
-        success, conversation, message = self.conversation.get_conversation(id)
-        if success:
-            success, messages, message = self.message.get_messages(id)
-            if success:
-                conversation_data = {
-                    "conversation": self.conversation.orm.object_as_dict(conversation),
-                    "messages": [self.conversation.orm.object_as_dict(m) for m in messages],
-                }
-                return success, conversation_data, message
-        return self._handle_response(success, conversation, message)
-
+    def bind_conversation(self, conversation: Conversation):
+        self.conversation = conversation
+        self.conversation_id = conversation.id
+    
     def new_conversation(self, user_id, character_id):
         super().new_conversation()
         self.conversation_tokens = 0
         success, conversation, message = self.conversation_manager.add_conversation(user_id, character_id, model=self.model)
         if success:    
-            self.conversation_id = conversation.id
+            self.bind_conversation(conversation)
             return conversation
         else:
             raise Exception(message)
@@ -285,17 +265,16 @@ class OpenAIAPI(Backend):
         return messages
 
     def _prepare_ask_request(self, prompt, system_message=None):
-        old_messages, new_messages = self.prepare_prompt_conversation_messages(prompt, self.conversation_id, self.parent_message_id, system_message=system_message)
+        old_messages, new_messages = self.prepare_prompt_conversation_messages(prompt, self.parent_message_id, system_message=system_message)
         messages = self.prepare_prompt_messsage_context(old_messages, new_messages)
         tokens = self.get_num_tokens_from_messages(messages)
         self.conversation_tokens = tokens
         messages = self._strip_out_messages_over_max_tokens(messages, self.conversation_tokens, self.model_max_submission_tokens)
         return new_messages, messages
 
-    def _ask_request_post(self, conversation_id, new_messages, response_message, title=None):
-        conversation_id = conversation_id or self.conversation_id
+    def _ask_request_post(self, new_messages, response_message, title=None):
         if response_message:
-            conversation, last_message = self.add_new_messages_to_conversation(conversation_id, new_messages, response_message, title)
+            conversation, last_message = self.add_new_messages_to_conversation(self.conversation_id, new_messages, response_message, title)
             self.parent_message_id = last_message.id
             return True, conversation, "Conversation updated with new messages"
             
@@ -317,7 +296,7 @@ class OpenAIAPI(Backend):
             self.message_clipboard = response_message
             if not self.streaming:
                 util.print_status_message(False, "Generation stopped")
-            success, response_obj, user_message = self._ask_request_post(self.conversation_id, new_messages, response_message, title)
+            success, response_obj, user_message = self._ask_request_post(new_messages, response_message, title)
             if success:
                 response_obj = response_message
         # End streaming loop.
@@ -340,7 +319,7 @@ class OpenAIAPI(Backend):
         if success:
             response_message = self._extract_message_content(response)
             self.message_clipboard = response_message
-            success, conversation, user_message = self._ask_request_post(self.conversation_id, new_messages, response_message, title)
+            success, conversation, user_message = self._ask_request_post(new_messages, response_message, title)
             if success:
                 return self._handle_response(success, response_message, user_message)
             return self._handle_response(success, conversation, user_message)

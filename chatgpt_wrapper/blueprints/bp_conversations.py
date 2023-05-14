@@ -50,7 +50,7 @@ def ask():
  
     success, conversation, _ = g.gpt.conversation_manager.get_conversation_by_user_and_character(current_user.id, character.id)
     if success:
-        g.gpt.conversation_id = conversation.id
+        g.gpt.bind_conversation(conversation)
     else:
         g.gpt.new_conversation(current_user.id, character.id)
     
