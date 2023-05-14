@@ -19,7 +19,7 @@ class OpenAIAPI(Backend):
         super().__init__(config)
         self._configure_access_info()
         self.user_manager = UserManager()
-        self.conversation_manager = ConversationManager()
+        self.cm = ConversationManager()
         self.message = MessageManager()
         self.character_manager = CharacterManager()
         self.conversation = None
@@ -224,11 +224,11 @@ class OpenAIAPI(Backend):
         return True, response, "Response received"
 
     def delete_conversation(self, user_id, conversation_id):
-        success, conversation, message = self.conversation_manager.delete_conversation(user_id, conversation_id)
+        success, conversation, message = self.cm.delete_conversation(user_id, conversation_id)
         return self._handle_response(success, conversation, message)
 
     def get_history(self, user_id, limit=20, offset=0):
-        success, conversations, message = self.conversation_manager.get_conversations(user_id, limit=limit, offset=offset)
+        success, conversations, message = self.cm.get_conversations(user_id, limit=limit, offset=offset)
         if success:
             history = {c.id: c.to_json() for c in conversations}
             return success, history, message
@@ -241,7 +241,7 @@ class OpenAIAPI(Backend):
     def new_conversation(self, user_id, character_id):
         super().new_conversation()
         self.conversation_tokens = 0
-        success, conversation, message = self.conversation_manager.add_conversation(user_id, character_id, model=self.model)
+        success, conversation, message = self.cm.add_conversation(user_id, character_id, model=self.model)
         if success:    
             self.bind_conversation(conversation)
             return conversation

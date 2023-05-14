@@ -48,7 +48,7 @@ def ask():
     
     _, character, _ = g.gpt.character_manager.get_by_name(data["character"])
  
-    success, conversation, _ = g.gpt.conversation_manager.get_conversation_by_user_and_character(current_user.id, character.id)
+    success, conversation, _ = g.gpt.cm.get_conversation_by_user_and_character(current_user.id, character.id)
     if success:
         g.gpt.bind_conversation(conversation)
     else:
@@ -136,7 +136,7 @@ def set_title(conversation_id):
     title = json["title"]
     success, conversation, user_message = g.gpt.set_title(title, conversation_id)
     if success:
-        return jsonify(g.gpt.conversation_manager.orm.object_as_dict(conversation))
+        return jsonify(g.gpt.cm.orm.object_as_dict(conversation))
     else:
         return default_error_handler("Failed to set title")
 
