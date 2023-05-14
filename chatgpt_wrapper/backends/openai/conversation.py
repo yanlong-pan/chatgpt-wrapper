@@ -1,15 +1,16 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from chatgpt_wrapper.backends.openai.orm import Conversation, Manager
+from chatgpt_wrapper.backends.openai.orm import Conversation, Manager, User
 
 class ConversationManager(Manager):
-    def get_conversations(self, user_id, limit=None, offset=None, order_desc=True):
+    
+    def get_history(self, user_id, limit=20, offset=0):
         try:
-            user = Conversation.get_user(user_id)
-            conversations = Conversation.get_conversations(user, limit, offset, order_desc)
-            return True, conversations, "Conversations retrieved successfully."
-        except SQLAlchemyError as e:
-            return self._handle_error(f"Failed to retrieve conversations: {str(e)}")
+            conversations = Conversation.get_conversations(user_id, limit=limit, offset=offset)
+            history = {c.id: c.to_json() for c in conversations}
+            return True, history, "User conversation history fetched"
+        except:
+            return self._handle_error("Failed to fetche user conversation history")
 
     def add_conversation(self, user_id, character_id, title=None, model="default", hidden=False):
         try:

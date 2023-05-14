@@ -227,13 +227,6 @@ class OpenAIAPI(Backend):
         success, conversation, message = self.cm.delete_conversation(user_id, conversation_id)
         return self._handle_response(success, conversation, message)
 
-    def get_history(self, user_id, limit=20, offset=0):
-        success, conversations, message = self.cm.get_conversations(user_id, limit=limit, offset=offset)
-        if success:
-            history = {c.id: c.to_json() for c in conversations}
-            return success, history, message
-        return self._handle_response(success, conversations, message)
-
     def bind_conversation(self, conversation: Conversation):
         self.conversation = conversation
         self.conversation_id = conversation.id

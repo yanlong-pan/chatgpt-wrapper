@@ -147,10 +147,10 @@ class Conversation(Base):
     )
     
     @classmethod
-    def get_conversations(cls, user, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True) -> List['Conversation']:
-        logger.debug(f'Retrieving Conversations for User with id {user.id}')
+    def get_conversations(cls, user_id, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True) -> List['Conversation']:
+        logger.debug(f'Retrieving Conversations for User with id {user_id}')
         if order_desc:
-            query = cls.query.filter_by(user_id=user.id, is_deleted=False).order_by(desc(cls.id))
+            query = cls.query.filter_by(user_id=user_id, is_deleted=False).order_by(desc(cls.id))
         else:
             query = cls.query.order_by(cls.id)
         query = cls._apply_limit_offset(query, limit, offset)
