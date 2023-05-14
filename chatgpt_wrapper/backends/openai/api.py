@@ -20,7 +20,7 @@ class OpenAIAPI(Backend):
         self._configure_access_info()
         self.um = UserManager()
         self.cm = ConversationManager()
-        self.message = MessageManager()
+        self.mm = MessageManager()
         self.character_manager = CharacterManager()
         self.conversation = None
         self.conversation_tokens = 0
@@ -81,7 +81,7 @@ class OpenAIAPI(Backend):
         self.conversation_tokens = tokens
 
     def get_conversation_token_count(self):
-        success, old_messages, user_message = self.message.get_messages(self.conversation)
+        success, old_messages, user_message = self.mm.get_messages(self.conversation)
         if not success:
             raise Exception(user_message)
         token_messages = self.prepare_prompt_messsage_context(old_messages)
@@ -153,7 +153,7 @@ class OpenAIAPI(Backend):
     def prepare_prompt_conversation_messages(self, prompt, target_id=None, system_message=None):
         old_messages = []
         new_messages = []
-        success, old_messages, message = self.message.get_messages(self.conversation, target_id=target_id)
+        success, old_messages, message = self.mm.get_messages(self.conversation, target_id=target_id)
         if not success:
             raise Exception(message)
         if len(old_messages) == 0:
@@ -169,10 +169,10 @@ class OpenAIAPI(Backend):
 
     def add_new_messages_to_conversation(self, new_messages, response_message, title=None):
         for m in new_messages:
-            success, message, user_message = self.message.add_message(self.conversation, m['role'], m['content'])
+            success, message, user_message = self.mm.add_message(self.conversation, m['role'], m['content'])
             if not success:
                 raise Exception(user_message)
-        success, last_message, user_message = self.message.add_message(self.conversation, 'assistant', response_message)
+        success, last_message, user_message = self.mm.add_message(self.conversation, 'assistant', response_message)
         if not success:
             raise Exception(user_message)
         # TODO: refine token count
@@ -181,7 +181,7 @@ class OpenAIAPI(Backend):
         return self.conversation, last_message
 
     def add_message(self, role, message):
-        success, message, user_message = self.message.add_message(self.conversation, role, message)
+        success, message, user_message = self.mm.add_message(self.conversation, role, message)
         if not success:
             raise Exception(user_message)
         return message
