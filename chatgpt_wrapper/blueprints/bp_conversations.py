@@ -46,7 +46,7 @@ def ask():
     if data["character"] not in [k for c in get_cached_characters() for k,_ in c.items()]:
         return default_error_handler('Invalid character', 422)
     
-    _, character, _ = g.gpt.character_manager.get_by_name(data["character"])
+    _, character, _ = g.gpt.chm.get_by_name(data["character"])
  
     success, conversation, _ = g.gpt.cm.get_conversation_by_user_and_character(current_user.id, character.id)
     if success:

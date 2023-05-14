@@ -21,7 +21,7 @@ class OpenAIAPI(Backend):
         self.um = UserManager()
         self.cm = ConversationManager()
         self.mm = MessageManager()
-        self.character_manager = CharacterManager()
+        self.chm = CharacterManager()
         self.conversation = None
         self.conversation_tokens = 0
         self.set_llm_class(ChatOpenAI)
