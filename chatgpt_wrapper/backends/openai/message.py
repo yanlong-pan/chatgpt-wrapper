@@ -16,16 +16,23 @@ class MessageManager(Manager):
             return False, None, "Message not found"
         return True, message, "Message retrieved successfully"
 
-    def get_messages(self, conversation: Conversation, limit=None, offset=None, target_id=None):
+    def get_messages(self, conversation_id, limit=None, offset=None, target_id=None):
         try:
-            messages = Message.get_messages(conversation, limit=limit, offset=offset, target_id=None)
+            messages = Message.get_messages(conversation_id, limit=limit, offset=offset, target_id=None)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to retrieve messages: {str(e)}")
         return True, messages, "Messages retrieved successfully"
 
-    def add_message(self, conversation: Conversation, role, message):
+    def add_messages(self, conversation_id, messages):
         try:
-            message = Message.add_message(conversation, role, message)
+            msgs = Message.add_messages(conversation_id, messages)
+        except SQLAlchemyError as e:
+            return self._handle_error(f"Failed to add message: {str(e)}")
+        return True, msgs, "Messages added successfully"
+
+    def add_message(self, conversation_id, role, message):
+        try:
+            message = Message.add_message(conversation_id, role, message)
         except SQLAlchemyError as e:
             return self._handle_error(f"Failed to add message: {str(e)}")
         return True, message, "Message added successfully"

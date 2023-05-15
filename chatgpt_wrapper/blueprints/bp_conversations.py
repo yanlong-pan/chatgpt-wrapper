@@ -97,7 +97,7 @@ def delete_conversation(conversation_id):
                 "error": "Failed to delete conversation"
             }
     """
-    success, _, user_message = g.gpt.delete_conversation(current_user.id, conversation_id)
+    success, _, user_message = g.gpt.cm.delete_conversation(current_user.id, conversation_id)
     if success:
         return jsonify({'success': True, 'message': user_message}), 200
     else:

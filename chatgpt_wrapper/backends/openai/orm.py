@@ -211,9 +211,9 @@ class Message(Base):
     )
     
     @classmethod
-    def get_messages(cls, conversation, limit=None, offset=None, target_id=None) -> List['Message']:
-        logger.debug(f'Retrieving Messages for Conversation with id {conversation.id}')
-        query = cls.query.filter_by(conversation_id=conversation.id, is_deleted=False).order_by(cls.id)
+    def get_messages(cls, conversation_id, limit=None, offset=None, target_id=None) -> List['Message']:
+        logger.debug(f'Retrieving Messages for Conversation with id {conversation_id}')
+        query = cls.query.filter_by(conversation_id=conversation_id, is_deleted=False).order_by(cls.id)
         query = cls._apply_limit_offset(query, limit, offset)
         if target_id:
             query = query.filter(cls.id <= target_id)
@@ -221,13 +221,31 @@ class Message(Base):
         return messages
 
     @classmethod
-    def add_message(cls, conversation, role, message):
+    def add_message(cls, conversation_id, role, message):
         now = datetime.datetime.now()
-        message = cls(conversation_id=conversation.id, role=role, message=message, created_time=now, prompt_tokens=0, completion_tokens=0)
+        message = cls(conversation_id=conversation_id, role=role, message=message, created_time=now, prompt_tokens=0, completion_tokens=0)
         db.session.add(message)
         db.session.commit()
-        logger.info(f"Added Message with role '{role}' for Conversation with id {conversation.id}")
+        logger.info(f"Added Message with role '{role}' for Conversation with id {conversation_id}")
         return message
+    
+    @classmethod
+    def add_messages(cls, conversation_id, messages: List[dict]):
+        now = datetime.datetime.now()
+        msgs = list(map(lambda m: cls(
+                conversation_id=conversation_id,
+                role=m.get('role'),
+                message = m.get('content'),
+                created_time=now,
+                prompt_tokens=0,
+                completion_tokens=0
+            ),
+            messages))
+        logger.debug(messages)
+        db.session.add_all(msgs)
+        db.session.commit()
+        logger.info(f"Added Messages for Conversation with id {conversation_id}")
+        return msgs
 
     @classmethod
     def get_message(cls, message_id):
