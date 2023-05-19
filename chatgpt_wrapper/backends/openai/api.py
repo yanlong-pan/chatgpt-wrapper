@@ -248,12 +248,10 @@ class OpenAIAPI(Backend):
         try:
             if not response_message:
                 return False, None, "Conversation not updated with new messages"
-            logger.debug(new_messages)
             _, msgs, _ = self.mm.add_messages(
                 self.conversation_id,
                 [*new_messages, self.build_openai_message('assistant', response_message)]
             )
-            logger.debug(msgs)
             
             self.parent_message_id = msgs[-1].id
         except Exception as e:
