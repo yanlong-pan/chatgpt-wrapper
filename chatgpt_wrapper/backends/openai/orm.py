@@ -5,6 +5,7 @@ from typing import List
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc, func
+from sqlalchemy.orm import joinedload, subqueryload, join, contains_eager
 from chatgpt_wrapper.core import constants
 from chatgpt_wrapper.core.logger import logger
 
@@ -147,12 +148,21 @@ class Conversation(Base):
     )
     
     @classmethod
-    def get_conversations(cls, user_id, limit=constants.DEFAULT_HISTORY_LIMIT, offset=None, order_desc=True) -> List['Conversation']:
+    def get_conversations(cls,
+                          user_id,
+                          load_messages = False,
+                          limit=constants.DEFAULT_HISTORY_LIMIT,
+                          offset=None,
+                          order_desc=True) -> List['Conversation']:
         logger.debug(f'Retrieving Conversations for User with id {user_id}')
+        query = cls.query.filter_by(user_id=user_id, is_deleted=False)
+        if load_messages:
+            # query = query.options(joinedload(cls.messages).filter)
+            query = query.join(cls.messages).filter(Message.role != 'system') \
+                .options(contains_eager(cls.messages)) \
+                .populate_existing()
         if order_desc:
-            query = cls.query.filter_by(user_id=user_id, is_deleted=False).order_by(desc(cls.id))
-        else:
-            query = cls.query.order_by(cls.id)
+            query = query.order_by(desc(cls.id))
         query = cls._apply_limit_offset(query, limit, offset)
         return query.all()
     

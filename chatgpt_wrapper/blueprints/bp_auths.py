@@ -24,7 +24,7 @@ def load_user(user_id):
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
-    return jsonify({'error': 'Unauthorized access'}), 401
+    return jsonify({'success': False, 'message': 'Unauthorized access'}), 401
 
 @auth_bp.route('/login', methods=['POST'])
 @input_validator(LoginInputs)
@@ -37,7 +37,7 @@ def login():
     if success and login_user(user, force=True):
         return jsonify({'success': True, 'current_user_id': current_user.id})
     else:
-        return jsonify({'success': False, 'reason': msg}), 401
+        return jsonify({'success': False, 'message': msg}), 401
 
 @auth_bp.route('/logout', methods=['POST'])
 @login_required

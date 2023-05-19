@@ -9,7 +9,7 @@ from chatgpt_wrapper.blueprints.json_schemas import chat_schema
 
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
-from chatgpt_wrapper.decorators.validation import input_validator
+from chatgpt_wrapper.decorators.validation import input_validator, current_user_restricted
 from chatgpt_wrapper.utils.cache import get_cached_characters
 
 class ChatInputs(Inputs):
@@ -141,6 +141,8 @@ def set_title(conversation_id):
         return default_error_handler("Failed to set title")
 
 @conversations_bp.route("/history/<int:user_id>", methods=["GET"])
+@login_required
+@current_user_restricted()
 def get_history(user_id):
     """
     Retrieve conversation history for a user.
@@ -170,7 +172,7 @@ def get_history(user_id):
     """
     limit = request.args.get("limit", 20)
     offset = request.args.get("offset", 0)
-    success, result, user_message = g.gpt.get_history(limit=limit, offset=offset, user_id=user_id)
+    success, result, user_message = g.gpt.cm.get_history(limit=limit, offset=offset, user_id=user_id)
     if result:
         return jsonify(result)
     else:

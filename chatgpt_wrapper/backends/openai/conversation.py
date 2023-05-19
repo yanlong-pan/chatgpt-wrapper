@@ -6,8 +6,14 @@ class ConversationManager(Manager):
     
     def get_history(self, user_id, limit=20, offset=0):
         try:
-            conversations = Conversation.get_conversations(user_id, limit=limit, offset=offset)
-            history = {c.id: c.to_json() for c in conversations}
+            conversations = Conversation.get_conversations(user_id, load_messages=True, limit=limit, offset=offset)
+            history = {}
+            for c in conversations:
+                for m in sorted(c.messages, key=lambda x: x.id):
+                    if history.get(c.id):
+                        history[c.id] += [{m.role: m.message}]
+                    else:
+                        history[c.id] = [{m.role: m.message}]
             return True, history, "User conversation history fetched"
         except:
             return self._handle_error("Failed to fetche user conversation history")

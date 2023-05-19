@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 
 from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
 from chatgpt_wrapper.blueprints.json_schemas import user_registration_schema
-from chatgpt_wrapper.decorators.validation import input_validator
+from chatgpt_wrapper.decorators.validation import input_validator, current_user_restricted
 
 users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 
@@ -27,10 +27,8 @@ def create_user():
 
 @users_bp.route('<int:user_id>', methods=["GET"])
 @login_required
+@current_user_restricted()
 def get_user(user_id):
-    # Check if the requested user ID matches the authenticated user's ID
-    if user_id != current_user.id:
-        return jsonify({'error': 'Forbidden', 'current_user_id': current_user.id}), 403
     success, user, msg = g.gpt.um.get_by_user_id(user_id)
     if success:
         return jsonify(user.to_json())
