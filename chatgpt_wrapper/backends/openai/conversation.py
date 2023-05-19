@@ -37,7 +37,11 @@ class ConversationManager(Manager):
 
     def get_conversation_by_user_and_character(self, user_id, character_id):
         try:
-            conversation = Conversation.query.filter_by(user_id=user_id, character_id=character_id).first()
+            conversation = Conversation.query.filter_by(
+                user_id=user_id,
+                character_id=character_id,
+                is_deleted = False
+            ).first()
             if conversation:
                 return True, conversation, "Conversation retrieved successfully."
             else:

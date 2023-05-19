@@ -169,7 +169,15 @@ class Conversation(Base):
     @classmethod
     def add_conversation(cls, user_id, character_id, title, model="default", hidden=False):
         now = datetime.datetime.now()
-        conversation = cls(user_id=user_id, character_id = character_id, title=title, model=model, created_time=now, updated_time=now, hidden=False)
+        conversation = cls(
+            user_id=user_id, 
+            character_id = character_id, 
+            title=title, 
+            model=model, 
+            created_time=now, 
+            updated_time=now, 
+            hidden=False
+        )
         db.session.add(conversation)
         db.session.commit()
         logger.info(f"Added Conversation with title '{title}' for User {User.get_user(user_id).username}")
@@ -178,12 +186,19 @@ class Conversation(Base):
     @classmethod
     def get_conversation(cls, conversation_id):
         logger.debug(f'Retrieving Conversation with id {conversation_id}')
-        conversation = db.session.get(cls, conversation_id)
+        conversation = cls.query.filter_by(
+            id=conversation_id,
+            is_deleted=False
+        ).first()
         return conversation
 
     @classmethod
     def get_user_conversation(cls, user_id, conversation_id):
-        return cls.query.filter_by(user_id=user_id, id=conversation_id).first()
+        return cls.query.filter_by(
+            user_id=user_id,
+            id=conversation_id,
+            is_deleted = False
+        ).first()
         
     @classmethod
     def edit_conversation(cls, conversation, **kwargs):
@@ -223,7 +238,10 @@ class Message(Base):
     @classmethod
     def get_messages(cls, conversation_id, limit=None, offset=None, target_id=None) -> List['Message']:
         logger.debug(f'Retrieving Messages for Conversation with id {conversation_id}')
-        query = cls.query.filter_by(conversation_id=conversation_id, is_deleted=False).order_by(cls.id)
+        query = cls.query.filter_by(
+            conversation_id=conversation_id,
+            is_deleted=False
+        ).order_by(cls.id)
         query = cls._apply_limit_offset(query, limit, offset)
         if target_id:
             query = query.filter(cls.id <= target_id)
@@ -251,7 +269,6 @@ class Message(Base):
                 completion_tokens=0
             ),
             messages))
-        logger.debug(messages)
         db.session.add_all(msgs)
         db.session.commit()
         logger.info(f"Added Messages for Conversation with id {conversation_id}")
@@ -260,7 +277,10 @@ class Message(Base):
     @classmethod
     def get_message(cls, message_id):
         logger.debug(f'Retrieving Message with id {message_id}')
-        message = db.session.get(cls, message_id)
+        message = cls.query.filter_by(
+            id=message_id,
+            is_deleted=False
+        ).first()
         return message
 
     @classmethod
