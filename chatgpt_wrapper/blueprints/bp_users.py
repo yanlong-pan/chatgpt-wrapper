@@ -1,9 +1,9 @@
 from flask import Blueprint, g, jsonify, request
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
-from flask_login import current_user, login_required
+from flask_login import login_required
 
-from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
+from chatgpt_wrapper.blueprints.response_handlers import default_error_handler
 from chatgpt_wrapper.blueprints.json_schemas import user_registration_schema
 from chatgpt_wrapper.decorators.validation import input_validator, current_user_restricted
 

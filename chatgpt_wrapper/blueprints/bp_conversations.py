@@ -8,7 +8,7 @@ from chatgpt_wrapper.blueprints.json_schemas import chat_schema
 
 
 
-from chatgpt_wrapper.blueprints.error_handlers import default_error_handler
+from chatgpt_wrapper.blueprints.response_handlers import default_error_handler
 from chatgpt_wrapper.decorators.validation import input_validator, current_user_restricted
 from chatgpt_wrapper.utils.cache import get_cached_characters
 
