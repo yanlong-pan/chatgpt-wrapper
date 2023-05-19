@@ -1,6 +1,9 @@
 from flask import jsonify
 from flask_inputs import Inputs
 
+def success_json_response(data, message:str=None, status_code=200):
+    res = {'success': True, 'data': data, 'message': message}
+    return jsonify(res), status_code
 
 def default_error_handler(message, status_code=500):
     return jsonify({'success': False, 'message': str(message)}), status_code

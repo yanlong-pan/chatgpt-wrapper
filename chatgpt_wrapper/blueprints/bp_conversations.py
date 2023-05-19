@@ -8,7 +8,7 @@ from chatgpt_wrapper.blueprints.json_schemas import chat_schema
 
 
 
-from chatgpt_wrapper.blueprints.response_handlers import default_error_handler
+from chatgpt_wrapper.blueprints.response_handlers import default_error_handler, success_json_response
 from chatgpt_wrapper.decorators.validation import input_validator, current_user_restricted
 from chatgpt_wrapper.utils.cache import get_cached_characters
 
@@ -69,7 +69,7 @@ def ask():
     execution_time = end_time - start_time
     
     if success:
-        return jsonify({"execution_time": execution_time, "result": result})
+        return success_json_response({"execution_time": execution_time, "response": result})
     else:
         return default_error_handler(user_message)
 
@@ -99,46 +99,9 @@ def delete_conversation(conversation_id):
     """
     success, _, user_message = g.gpt.cm.delete_conversation(current_user.id, conversation_id)
     if success:
-        return jsonify({'success': True, 'message': user_message}), 200
+        return success_json_response(data=None, message=user_message)
     else:
         return default_error_handler(user_message)
-
-@conversations_bp.route("/<string:conversation_id>/set-title", methods=["PATCH"])
-def set_title(conversation_id):
-    """
-    Set the title of a conversation.
-
-    Path:
-        PATCH /conversations/:conversation_id/set-title
-
-    Parameters:
-        conversation_id (str): The ID of the conversation to set the title for.
-
-    Request Body:
-        JSON:
-            {
-                "title": "New Title"
-            }
-
-    Returns:
-        JSON:
-            {
-                "success": true,
-            }
-
-        JSON:
-            {
-                "success": false,
-                "error": "Failed to set title"
-            }
-    """
-    json = request.get_json()
-    title = json["title"]
-    success, conversation, user_message = g.gpt.set_title(title, conversation_id)
-    if success:
-        return jsonify(g.gpt.cm.orm.object_as_dict(conversation))
-    else:
-        return default_error_handler("Failed to set title")
 
 @conversations_bp.route("/history/<int:user_id>", methods=["GET"])
 @login_required
@@ -172,8 +135,8 @@ def get_history(user_id):
     """
     limit = request.args.get("limit", 20)
     offset = request.args.get("offset", 0)
-    success, result, user_message = g.gpt.cm.get_history(limit=limit, offset=offset, user_id=user_id)
-    if result:
-        return jsonify(result)
+    success, result, _ = g.gpt.cm.get_history(limit=limit, offset=offset, user_id=user_id)
+    if success:
+        return success_json_response({'conversations': result})
     else:
         return default_error_handler("Failed to get history")
