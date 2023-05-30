@@ -3,7 +3,7 @@ from flask import request
 from flask_inputs import Inputs
 from flask_login import current_user
 
-from chatgpt_wrapper.blueprints.error_handlers import unauthorised_request_handler, validation_error_handler
+from chatgpt_wrapper.blueprints.response_handlers import unauthorised_request_handler, validation_error_handler
 
 def input_validator(cls: Inputs):
     def outer(func):
@@ -26,5 +26,16 @@ def current_user_restricted(user_id_field='user_id'):
                 return func(*args, **kwargs)
             else:
                 return unauthorised_request_handler()
+        return wrapper
+    return outer
+
+def not_none(obj, attr: str):
+    def outer(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kargs):
+            if getattr(obj, attr):
+                return func(*args, **kargs)
+            else:
+                raise Exception(attr + 'is None') 
         return wrapper
     return outer
