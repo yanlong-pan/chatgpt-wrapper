@@ -10,9 +10,10 @@ port=8888
 bind = f"0.0.0.0:{port}"
 # bind = f"127.0.0.1:{port}"
 # 启动进程数量
-workers = multiprocessing.cpu_count() * 2 +1
+workers = 1
+# workers = multiprocessing.cpu_count() * 2 +1
 worker_class = 'gevent'
-threads = 20
+threads = 2
 preload_app = True
 reload = True
 x_forwarded_for_header = 'X_FORWARDED-FOR'
