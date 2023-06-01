@@ -44,4 +44,4 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return success_json_response(message='You have been logged out successfully.'), 200
+    return success_json_response(None, message='You have been logged out successfully.')
