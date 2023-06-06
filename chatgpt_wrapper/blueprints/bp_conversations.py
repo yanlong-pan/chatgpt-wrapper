@@ -1,6 +1,6 @@
 
 import time
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request, Response, stream_with_context
 from flask_login import current_user, login_required
 from flask_inputs import Inputs
 from flask_inputs.validators import JsonSchema
@@ -40,7 +40,6 @@ def ask():
             Some response.
     """
     
-    start_time = time.time()
     data = request.get_json()
     
     if data["character"] not in [k for c in get_cached_characters() for k,_ in c.items()]:
@@ -60,18 +59,17 @@ def ask():
         }
     else:
         model_customizations = {}
-
-    success, result, user_message = g.gpt.ask(
-        prompt=data['user_input'],
-        model_customizations=model_customizations
-    )
-    end_time = time.time()
-    execution_time = end_time - start_time
     
-    if success:
-        return success_json_response({"execution_time": execution_time, "response": result})
-    else:
-        return default_error_handler(user_message)
+    @stream_with_context
+    def generate():
+        for message in g.gpt.ask_stream(
+            prompt=data['user_input'],
+            model_customizations=model_customizations
+        ):
+            content = message.content.encode('utf-8')
+            yield content
+        
+    return Response(generate(), content_type='text/event-stream')
 
 @conversations_bp.route("/<string:conversation_id>", methods=["DELETE"])
 @login_required

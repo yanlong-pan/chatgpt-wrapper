@@ -1,6 +1,7 @@
 import os
 import threading
 from typing import List
+from flask import current_app
 import openai
 import tiktoken
 
@@ -190,11 +191,13 @@ class OpenAIAPI(Backend):
     def _call_openai_streaming(self, messages, temperature=None, top_p=None, presence_penalty=None, frequency_penalty=None):
         logger.debug(f"Initiated streaming request with message count: {len(messages)}")
         llm, messages = self._build_openai_chat_request(messages, temperature=temperature, top_p=top_p, presence_penalty=presence_penalty, frequency_penalty=frequency_penalty, stream=True)
-        try:
-            response = llm(messages)
-        except ValueError as e:
-            return False, messages, e
-        return True, response, "Response received"
+        
+        yield llm(messages)
+        # try:
+        #     response = llm(messages)
+        # except ValueError as e:
+        #     return False, messages, e
+        # return True, response, "Response received"
 
     def _call_openai_non_streaming(self, messages, temperature=None, top_p=None, presence_penalty=None, frequency_penalty=None):
         logger.debug(f"Initiated non-streaming request with message count: {len(messages)} {threading.current_thread().name}")
@@ -270,19 +273,22 @@ class OpenAIAPI(Backend):
         #        logger.info("Request to interrupt streaming")
         #        break
         logger.debug(f"Started streaming response at {util.current_datetime().isoformat()}")
-        success, response_obj, user_message = self._call_openai_streaming(messages, **model_customizations)
-        if success:
-            logger.debug(f"Stopped streaming response at {util.current_datetime().isoformat()}")
-            response_message = self._extract_message_content(response_obj)
-            self.message_clipboard = response_message
-            if not self.streaming:
-                util.print_status_message(False, "Generation stopped")
-            success, response_obj, user_message = self._ask_request_post(new_messages, response_message, title)
-            if success:
-                response_obj = response_message
-        # End streaming loop.
-        self.streaming = False
-        return self._handle_response(success, response_obj, user_message)
+        
+        yield from self._call_openai_streaming(messages, **model_customizations)
+        # yield from self._call_openai_streaming(messages, **model_customizations)
+        # success, response_obj, user_message = self._call_openai_streaming(messages, **model_customizations)
+        # if success:
+        #     logger.debug(f"Stopped streaming response at {util.current_datetime().isoformat()}")
+        #     response_message = self._extract_message_content(response_obj)
+        #     self.message_clipboard = response_message
+        #     if not self.streaming:
+        #         util.print_status_message(False, "Generation stopped")
+        #     success, response_obj, user_message = self._ask_request_post(new_messages, response_message, title)
+        #     if success:
+        #         response_obj = response_message
+        # # End streaming loop.
+        # self.streaming = False
+        # return self._handle_response(success, response_obj, user_message)
 
     def ask(self, prompt, title=None, model_customizations={}):
         """
