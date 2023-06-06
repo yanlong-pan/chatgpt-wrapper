@@ -265,6 +265,7 @@ class OpenAIAPI(Backend):
         return True, self.conversation, "Conversation updated with new messages"
     
     def ask_stream(self, prompt, title=None, model_customizations={}):
+        response_message = []
         system_message, model_customizations = self.extract_system_message(model_customizations)
         new_messages, messages = self._prepare_ask_request(prompt, system_message=system_message)
         # Streaming loop.
@@ -274,7 +275,12 @@ class OpenAIAPI(Backend):
         #        break
         logger.debug(f"Started streaming response at {util.current_datetime().isoformat()}")
         
-        yield from self._call_openai_streaming(messages, **model_customizations)
+        for message in self._call_openai_streaming(messages, **model_customizations):
+            response_message.append(message.content)
+            yield message
+
+        else:
+            self._ask_request_post(new_messages, ''.join(response_message), title)
         # yield from self._call_openai_streaming(messages, **model_customizations)
         # success, response_obj, user_message = self._call_openai_streaming(messages, **model_customizations)
         # if success:
