@@ -24,8 +24,58 @@ def ask():
     """
     Have a chat.
 
-    Path:
-        POST /conversations
+    Request Body:
+        JSON:
+            {
+                "user_input": String,
+                "character": String,
+                "refresh": Boolean,
+            }
+
+    Returns:
+        STRING:
+            Some response.
+    """
+    start_time = time.time()
+    data = request.get_json()
+    
+    if data["character"] not in [k for c in get_cached_characters() for k,_ in c.items()]:
+        return default_error_handler('Invalid character', 422)
+    
+    _, character, _ = g.gpt.chm.get_by_name(data["character"])
+ 
+    success, conversation, _ = g.gpt.cm.get_conversation_by_user_and_character(current_user.id, character.id)
+    if success:
+        g.gpt.bind_conversation(conversation)
+    else:
+        g.gpt.new_conversation(current_user.id, character.id)
+    
+    if data.get('refresh', False): # refresh not yet implemented in OpenAIAPI
+        model_customizations = {
+            "system_message": character.profile,
+        }
+    else:
+        model_customizations = {}
+    
+    success, result, user_message = g.gpt.ask(
+        prompt=data['user_input'],
+        model_customizations=model_customizations
+    )
+    end_time = time.time()
+    execution_time = end_time - start_time
+    
+    if success:
+        return success_json_response({"execution_time": execution_time, "response": result})
+    else:
+        return default_error_handler(user_message)
+
+
+@conversations_bp.route("/stream", methods=["POST"])
+@login_required
+@input_validator(ChatInputs)
+def ask_stream():
+    """
+    Have a chat.
 
     Request Body:
         JSON:
