@@ -17,8 +17,10 @@ flask_inputs
 deepmerge
 alembic
 flask_caching
-flask_sqlalchemy
 flask_migrate
 nb_log
 pymysql
 flask-cors
+uvicorn[standard]
+fastapi
+databases[aiomysql]
