@@ -7,12 +7,14 @@ from chatgpt_wrapper.backends.openai.api import OpenAIAPI
 
 from chatgpt_wrapper.blueprints.json_schemas import user_login_schema
 from chatgpt_wrapper.blueprints.response_handlers import default_error_handler, success_json_response
+from chatgpt_wrapper.constants.response import LOGIN_FAILURE, LOGIN_SUCCESS, REGISTER_SUCCESS
 from chatgpt_wrapper.decorators.validation import input_validator
 from fastapi import APIRouter
 from chatgpt_wrapper.model import User
 from chatgpt_wrapper.profiles.config_loader import load_gpt_config
 
 from chatgpt_wrapper.schema.forms.auth import LoginForm
+from chatgpt_wrapper.schema.responses.base import Failure, Success
 
 auth_router = APIRouter(prefix='/api/v1/auth')
 
@@ -35,14 +37,26 @@ def load_user(user_id):
 def unauthorized_handler():
     return default_error_handler('Unauthorized access', 401)
 
+@auth_router.post('/register')
+async def register(form: LoginForm):
+    try:
+        user = await User.add_user(
+            email=form.email,
+            password=form.password,
+        )
+        return Success(msg=REGISTER_SUCCESS, detail=user.to_json())
+    except Exception as e:
+        return Failure(msg=LOGIN_FAILURE)
+
 @auth_router.post('/login')
-# @input_validator(LoginInputs)
 async def login(form: LoginForm):
-    user = await User.get_user_by_name_or_email(
-        username=form.email,
-        email=form.email,
-    )
-    return user.to_json()
+    try:
+        user = await User.get_user_by_email(
+            email=form.email,
+        )
+        return Success(msg=LOGIN_SUCCESS, detail=user.to_json())
+    except Exception as e:
+        return Failure(msg=LOGIN_FAILURE)
     # data = request.get_json()
     # identifier = data.get('email') or data.get('username')
     # password = data.get('password')

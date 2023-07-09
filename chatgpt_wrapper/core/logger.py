@@ -10,3 +10,7 @@ logger = get_logger(
     log_file_handler_type = 1,
     formatter_template = 2
 )
+
+console_logger = get_logger(
+    'console'
+)

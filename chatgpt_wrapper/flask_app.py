@@ -4,9 +4,9 @@ import logging
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
-from chatgpt_wrapper.database import database
 from chatgpt_wrapper.backends.openai.user import UserManager
 from chatgpt_wrapper.core.logger import logger
+from chatgpt_wrapper.database import create_db_and_tables, drop_db_and_tables
 from chatgpt_wrapper.profiles.config_loader import load_flask_config
 from chatgpt_wrapper.blueprints.bp_auths import auth_bp, auth_router
 from chatgpt_wrapper.blueprints.bp_users import users_bp
@@ -16,21 +16,25 @@ from chatgpt_wrapper.utils.cache import cache
 from chatgpt_wrapper.backends.openai.orm import db
 from chatgpt_wrapper.utils.hooks import before_request_callback, teardown_request_callback
 from fastapi import FastAPI
+from chatgpt_wrapper.core.logger import console_logger
 
 
 def create_application(name, timeout=60, proxy=None):
     app = FastAPI(title=name)
-
-    # @app.on_event("startup")
-    # async def startup():
-    #     await database.connect()
-
-    # @app.on_event("shutdown")
-    # async def shutdown():
-    #     await database.disconnect()
-
     
     app.include_router(auth_router)
+    
+    @app.on_event("startup")
+    async def on_startup():
+        # Not needed if you setup a migration system like Alembic
+        await create_db_and_tables()
+        console_logger.info('db created')
+    
+    @app.on_event("shutdown")
+    async def on_startup():
+        # Not needed if you setup a migration system like Alembic
+        await drop_db_and_tables()
+        console_logger.info('db dropped')
     # load_flask_config(app)
     
     # logger.debug('freshing the applicaiton')
@@ -65,3 +69,4 @@ def create_application(name, timeout=60, proxy=None):
 # else:
     # app = create_application("chatgpt")
 app = create_application("chatgpt")
+

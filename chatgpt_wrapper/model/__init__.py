@@ -1,17 +1,26 @@
+import datetime
+from fastapi import Depends
 from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String
-from sqlalchemy.orm import relationship
 from sqlalchemy import func, select
-from chatgpt_wrapper.backends.openai.orm import Orm
-from chatgpt_wrapper.database import Base, async_session
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.ext.asyncio import AsyncSession
+from chatgpt_wrapper.database import Base, async_session, get_async_session
+from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
+from sqlalchemy.ext.asyncio import AsyncAttrs
+from chatgpt_wrapper.core.logger import console_logger
 
-class BaseModel(Base):
+
+async def get_user_db(session: AsyncSession = Depends(get_async_session)):
+    yield SQLAlchemyUserDatabase(session, User)
+
+class BaseModel(AsyncAttrs, Base):
     __abstract__ = True
     is_deleted = Column(Boolean, default=False)
     
     async def soft_delete(self):
         async with async_session.begin() as session:
             self.is_deleted = True
-            await session.flush()
+            await session.merge(self)
 
     @classmethod
     def _apply_limit_offset(cls, query, limit, offset):
@@ -20,7 +29,7 @@ class BaseModel(Base):
         if offset is not None:
             query = query.offset(offset)
         return query
-    
+
     def to_json(self, fields=None):
         if fields is None:
             fields = self.__table__.columns.keys()
@@ -28,35 +37,33 @@ class BaseModel(Base):
 
 
 
-class User(BaseModel):
+class User(SQLAlchemyBaseUserTable[int], BaseModel):
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(255), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
-    default_model = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=func.now())
     last_login_at = Column(DateTime, nullable=False)
-    preferences = Column(JSON, nullable=False)
 
     # conversations = relationship('Conversation', backref='user', passive_deletes=True)
 
     __table_args__ = (
-        Index('user_username_idx', username, unique=True),
         Index('user_email_idx', email, unique=True),
         Index('user_created_at_idx', created_at),
         Index('user_last_login_at', last_login_at),
     )
     
     @classmethod
-    async def get_user_by_name_or_email(cls, username, email, strict_match=True):
-        username_filter = cls.username == username
-        email_filter = cls.email == email
-        if not strict_match:
-            username_filter |= cls.email == username
-            email_filter |= cls.username == email
-
+    async def add_user(cls, email, password):
+        now = datetime.datetime.now()
+        user = cls(hashed_password=password, email=email, created_at=now, last_login_at=now)
         async with async_session.begin() as session:
-            results = await session.execute(select(cls).where(username_filter | email_filter))
-            return results.scalar()
+            session.add(user)
+        console_logger.info(f'Added User with email {email}')
+        return user
+    
+    @classmethod
+    async def get_user_by_email(cls, email):
+        async with async_session.begin() as session:
+            results = await session.execute(select(cls).where(cls.email == email))
+            return results.scalars().one()

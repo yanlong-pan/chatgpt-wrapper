@@ -23,4 +23,6 @@ pymysql
 flask-cors
 uvicorn[standard]
 fastapi
-databases[aiomysql]
+aiomysql
+fastapi-users[sqlalchemy]
+fastapi-users[redis]
